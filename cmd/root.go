@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/viper"
 )
 
+var version string = "v0.0.0"
 var configExists bool
 
 // rootCmd represents the base command when called without any subcommands

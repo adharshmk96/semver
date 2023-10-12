@@ -1,4 +1,4 @@
-package parser
+package verman
 
 import (
 	"fmt"
@@ -26,7 +26,7 @@ func Parse(version string) (*Semver, error) {
 	var err error
 
 	// Remove 'v' prefix if it exists.
-	if version[0] == 'v' {
+	if version != "" && version[0] == 'v' {
 		version = version[1:]
 	}
 
@@ -92,27 +92,6 @@ func Parse(version string) (*Semver, error) {
 	}
 
 	return semver, nil
-}
-
-func preReleaseCleanup(semver *Semver) {
-	// if rc is set, set alpha and beta to 0
-	if semver.RC > 0 {
-		semver.Alpha = 0
-		semver.Beta = 0
-		return
-	}
-	// if beta is set, set alpha and rc to 0
-	if semver.Beta > 0 {
-		semver.Alpha = 0
-		semver.RC = 0
-		return
-	}
-	// if alpha is set, set beta and rc to 0
-	if semver.Alpha > 0 {
-		semver.Beta = 0
-		semver.RC = 0
-		return
-	}
 }
 
 func (s *Semver) String() string {

@@ -5,10 +5,8 @@ package cmd
 
 import (
 	"fmt"
-	"os/exec"
-	"strings"
 
-	"github.com/adharshmk96/semver/pkg/parser"
+	"github.com/adharshmk96/semver/pkg/verman"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -24,26 +22,27 @@ It will get latest tag from git and set it as the current version, if the git ta
 If no git tags are found, it will set the version to 0.0.0`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if configExists {
-			fmt.Println("Configuration already exists. Please run `semver get` to display the current version.")
+			fmt.Println("configuration already exists. Please run `semver get` to display the current version.")
 			return
 		}
 
-		// get latest tag from git
-		// if no tags found, set version to 0.0.0
-		// if tag found, set version to tag
-		// if tag is not semver, set version to 0.0.0
-		// if tag is semver, set version to tag
-		lastGitTag, err := GetLastTagFromGit()
+		fmt.Println("initializing semver configuration...")
+		lastGitTag, err := verman.GetLastTagFromGit()
 		if err != nil {
-			fmt.Println("No git tags found. Setting version to v0.0.0")
+			fmt.Println("no git tags found. setting version to v0.0.0")
+			viper.Set("version", "v0.0.0")
+			lastGitTag = "v0.0.0"
+		}
+
+		fmt.Println("found git tag:", lastGitTag)
+
+		version, err := verman.Parse(lastGitTag)
+		if err != nil {
+			fmt.Println("invalid version from git tag. setting version to v0.0.0")
 			viper.Set("version", "v0.0.0")
 		}
 
-		version, err := parser.Parse(lastGitTag)
-		if err != nil {
-			fmt.Println("Invalid version from git tag. Setting version to v0.0.0")
-			viper.Set("version", "v0.0.0")
-		}
+		fmt.Print("setting version to ", version.String(), "...")
 
 		viper.Set("major", version.Major)
 		viper.Set("minor", version.Minor)
@@ -52,19 +51,19 @@ If no git tags are found, it will set the version to 0.0.0`,
 		viper.Set("beta", version.Beta)
 		viper.Set("rc", version.RC)
 
-		viper.WriteConfig()
+		viper.WriteConfigAs("version.yaml")
+
+		fmt.Println("creating git tag...")
+		err = verman.GitTagVersion(version)
+		if err != nil {
+			fmt.Println("error creating git tag: check if the tag already exists.")
+			return
+		}
+
+		fmt.Println("semver configuration initialized successfully. run `semver get` to display the current version.")
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(initCmd)
-}
-
-func GetLastTagFromGit() (string, error) {
-	cmd := exec.Command("git", "describe", "--tags", "--abbrev=0")
-	output, err := cmd.Output()
-	if err != nil {
-		return "", fmt.Errorf("error getting last git tag: %v", err)
-	}
-	return strings.TrimSpace(string(output)), nil
 }

@@ -6,6 +6,7 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/adharshmk96/semver/pkg/verman"
 	"github.com/spf13/cobra"
 )
 
@@ -20,6 +21,13 @@ var getCmd = &cobra.Command{
 			return
 		}
 
+		version, err := verman.GetVersionFromConfig()
+		if err != nil {
+			fmt.Println("Error reading configuration file.")
+			return
+		}
+
+		fmt.Println("Project version: ", version.String())
 	},
 }
 

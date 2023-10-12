@@ -1,9 +1,9 @@
-package parser_test
+package verman_test
 
 import (
 	"testing"
 
-	"github.com/adharshmk96/semver/pkg/parser"
+	"github.com/adharshmk96/semver/pkg/verman"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -13,12 +13,12 @@ func TestParseSemverString(t *testing.T) {
 		tc := []struct {
 			name     string
 			input    string
-			expected parser.Semver
+			expected verman.Semver
 		}{
 			{
 				name:  "Test correct alpha version",
 				input: "v1.2.3-alpha.1",
-				expected: parser.Semver{
+				expected: verman.Semver{
 					Major: 1,
 					Minor: 2,
 					Patch: 3,
@@ -30,7 +30,7 @@ func TestParseSemverString(t *testing.T) {
 			{
 				name:  "Test correct beta version",
 				input: "v1.2.3-beta.1",
-				expected: parser.Semver{
+				expected: verman.Semver{
 					Major: 1,
 					Minor: 2,
 					Patch: 3,
@@ -42,7 +42,7 @@ func TestParseSemverString(t *testing.T) {
 			{
 				name:  "Test correct rc version",
 				input: "v1.2.3-rc.1",
-				expected: parser.Semver{
+				expected: verman.Semver{
 					Major: 1,
 					Minor: 2,
 					Patch: 3,
@@ -54,7 +54,7 @@ func TestParseSemverString(t *testing.T) {
 			{
 				name:  "Test correct release version",
 				input: "v1.2.3",
-				expected: parser.Semver{
+				expected: verman.Semver{
 					Major: 1,
 					Minor: 2,
 					Patch: 3,
@@ -66,7 +66,7 @@ func TestParseSemverString(t *testing.T) {
 			{
 				name:  "Test correct release version without v",
 				input: "1.2.3",
-				expected: parser.Semver{
+				expected: verman.Semver{
 					Major: 1,
 					Minor: 2,
 					Patch: 3,
@@ -78,7 +78,7 @@ func TestParseSemverString(t *testing.T) {
 
 		for _, c := range tc {
 			t.Run(c.name, func(t *testing.T) {
-				actual, err := parser.Parse(c.input)
+				actual, err := verman.Parse(c.input)
 				if err != nil {
 					t.Errorf("Error parsing semver string: %v", err)
 				}
@@ -118,7 +118,7 @@ func TestParseSemverString(t *testing.T) {
 
 		for _, c := range tc {
 			t.Run(c, func(t *testing.T) {
-				_, err := parser.Parse(c)
+				_, err := verman.Parse(c)
 				assert.Error(t, err)
 			})
 		}
@@ -129,12 +129,12 @@ func TestVersionToString(t *testing.T) {
 	t.Run("Returns correct string for semver.", func(t *testing.T) {
 		tc := []struct {
 			name     string
-			input    parser.Semver
+			input    verman.Semver
 			expected string
 		}{
 			{
 				name: "Test correct alpha version",
-				input: parser.Semver{
+				input: verman.Semver{
 					Major: 1,
 					Minor: 2,
 					Patch: 3,
@@ -146,7 +146,7 @@ func TestVersionToString(t *testing.T) {
 			},
 			{
 				name: "Test correct beta version",
-				input: parser.Semver{
+				input: verman.Semver{
 					Major: 1,
 					Minor: 2,
 					Patch: 3,
@@ -158,7 +158,7 @@ func TestVersionToString(t *testing.T) {
 			},
 			{
 				name: "Test correct rc version",
-				input: parser.Semver{
+				input: verman.Semver{
 					Major: 1,
 					Minor: 2,
 					Patch: 3,
@@ -170,7 +170,7 @@ func TestVersionToString(t *testing.T) {
 			},
 			{
 				name: "Test correct release version",
-				input: parser.Semver{
+				input: verman.Semver{
 					Major: 1,
 					Minor: 2,
 					Patch: 3,
@@ -193,7 +193,7 @@ func TestVersionToString(t *testing.T) {
 
 func TestIncrement(t *testing.T) {
 	t.Run("Increments major version correctly.", func(t *testing.T) {
-		version := parser.Semver{
+		version := verman.Semver{
 			Major: 1,
 		}
 
@@ -204,7 +204,7 @@ func TestIncrement(t *testing.T) {
 	})
 
 	t.Run("Increments minor version correctly.", func(t *testing.T) {
-		version := parser.Semver{
+		version := verman.Semver{
 			Minor: 1,
 		}
 
@@ -215,7 +215,7 @@ func TestIncrement(t *testing.T) {
 	})
 
 	t.Run("Increments patch version correctly.", func(t *testing.T) {
-		version := parser.Semver{
+		version := verman.Semver{
 			Patch: 1,
 		}
 
@@ -226,7 +226,7 @@ func TestIncrement(t *testing.T) {
 	})
 
 	t.Run("Resets minor and patch version when major version is incremented.", func(t *testing.T) {
-		version := parser.Semver{
+		version := verman.Semver{
 			Major: 1,
 			Minor: 1,
 			Patch: 1,
@@ -240,7 +240,7 @@ func TestIncrement(t *testing.T) {
 	})
 
 	t.Run("Resets alpha, beta and rc version when patch version is incremented.", func(t *testing.T) {
-		version := parser.Semver{
+		version := verman.Semver{
 			Patch: 1,
 			Alpha: 1,
 			Beta:  1,
@@ -256,7 +256,7 @@ func TestIncrement(t *testing.T) {
 	})
 
 	t.Run("Resets patch, alpha, beta and rc version when minor version is incremented.", func(t *testing.T) {
-		version := parser.Semver{
+		version := verman.Semver{
 			Minor: 1,
 			Patch: 1,
 			Alpha: 1,
@@ -274,7 +274,7 @@ func TestIncrement(t *testing.T) {
 	})
 
 	t.Run("Resets minor, patch, alpha, beta and rc version when major version is incremented.", func(t *testing.T) {
-		version := parser.Semver{
+		version := verman.Semver{
 			Major: 1,
 			Minor: 1,
 			Patch: 1,
@@ -294,7 +294,7 @@ func TestIncrement(t *testing.T) {
 	})
 
 	t.Run("Alpha version is incremented correctly.", func(t *testing.T) {
-		version := parser.Semver{
+		version := verman.Semver{
 			Alpha: 1,
 		}
 
@@ -304,7 +304,7 @@ func TestIncrement(t *testing.T) {
 	})
 
 	t.Run("Beta version is incremented correctly.", func(t *testing.T) {
-		version := parser.Semver{
+		version := verman.Semver{
 			Beta: 1,
 		}
 
@@ -314,7 +314,7 @@ func TestIncrement(t *testing.T) {
 	})
 
 	t.Run("RC version is incremented correctly.", func(t *testing.T) {
-		version := parser.Semver{
+		version := verman.Semver{
 			RC: 1,
 		}
 
@@ -324,7 +324,7 @@ func TestIncrement(t *testing.T) {
 	})
 
 	t.Run("Alpha and RC version is reset when beta version is incremented.", func(t *testing.T) {
-		version := parser.Semver{
+		version := verman.Semver{
 			Alpha: 1,
 			Beta:  1,
 			RC:    1,
@@ -338,7 +338,7 @@ func TestIncrement(t *testing.T) {
 	})
 
 	t.Run("Alpha and Beta version is reset when rc version is incremented.", func(t *testing.T) {
-		version := parser.Semver{
+		version := verman.Semver{
 			Alpha: 1,
 			Beta:  1,
 			RC:    1,
@@ -352,7 +352,7 @@ func TestIncrement(t *testing.T) {
 	})
 
 	t.Run("Beta and RC version is reset when alpha version is incremented.", func(t *testing.T) {
-		version := parser.Semver{
+		version := verman.Semver{
 			Alpha: 1,
 			Beta:  1,
 			RC:    1,
