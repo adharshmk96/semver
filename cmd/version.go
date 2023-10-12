@@ -1,5 +1,5 @@
 /*
-Copyright © 2023 NAME HERE <EMAIL ADDRESS>
+Copyright © 2023 Adharsh M dev@adharsh.in
 */
 package cmd
 
@@ -12,7 +12,6 @@ import (
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Display the current version of semver",
-	Long:  `Displays the current version of semver cli application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println(version)
 	},

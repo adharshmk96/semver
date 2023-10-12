@@ -40,7 +40,7 @@ func init() {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
 			// if command is init, don't display error
 			if len(os.Args) > 1 && os.Args[1] != "init" {
-				fmt.Println("No version.yaml configuration found. Please run `semver init` to initialize the configuration.")
+				fmt.Println("no version.yaml configuration found. run `semver init` to initialize the configuration.")
 				os.Exit(1)
 			} else {
 				configExists = false
@@ -52,7 +52,4 @@ func init() {
 	} else {
 		configExists = true
 	}
-
-	rootCmd.AddCommand(initCmd)
-	rootCmd.AddCommand(getCmd)
 }

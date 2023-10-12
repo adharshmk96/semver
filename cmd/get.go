@@ -17,17 +17,17 @@ var getCmd = &cobra.Command{
 	Long:  `Reads the version.yaml file and displays the current version of the project.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if !configExists {
-			fmt.Println("No configuration found. Please run `semver init` to initialize the configuration.")
+			fmt.Println("no configuration found. run `semver init` to initialize the configuration.")
 			return
 		}
 
 		version, err := verman.GetVersionFromConfig()
 		if err != nil {
-			fmt.Println("Error reading configuration file.")
+			fmt.Println("error reading configuration file.")
 			return
 		}
 
-		fmt.Println("Project version: ", version.String())
+		fmt.Println(version.String())
 	},
 }
 

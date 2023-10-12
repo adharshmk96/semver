@@ -8,6 +8,22 @@
         "mode": "auto",
         "program": "${workspaceFolder}/main.go",
         "args": ["init"]
+      },
+      {
+        "name": "semver up major",
+        "type": "go",
+        "request": "launch",
+        "mode": "auto",
+        "program": "${workspaceFolder}/main.go",
+        "args": ["up", "major"]
+      },
+      {
+        "name": "semver reset",
+        "type": "go",
+        "request": "launch",
+        "mode": "auto",
+        "program": "${workspaceFolder}/main.go",
+        "args": ["reset"]
       }
     ]
   }

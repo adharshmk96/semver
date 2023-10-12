@@ -1,6 +1,10 @@
 package verman
 
-import "github.com/spf13/viper"
+import (
+	"os"
+
+	"github.com/spf13/viper"
+)
 
 func GetVersionFromConfig() (*Semver, error) {
 	semver := &Semver{}
@@ -14,4 +18,19 @@ func GetVersionFromConfig() (*Semver, error) {
 
 	return semver, nil
 
+}
+
+func WriteVersionToConfig(version *Semver) error {
+	viper.Set("major", version.Major)
+	viper.Set("minor", version.Minor)
+	viper.Set("patch", version.Patch)
+	viper.Set("alpha", version.Alpha)
+	viper.Set("beta", version.Beta)
+	viper.Set("rc", version.RC)
+
+	return viper.WriteConfigAs("version.yaml")
+}
+
+func RemoveConfig() error {
+	return os.RemoveAll("version.yaml")
 }
