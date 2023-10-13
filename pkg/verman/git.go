@@ -132,5 +132,5 @@ func GitCommitVersionConfig(version *Semver) error {
 		return err
 	}
 	// Commits all staged.
-	return gitCommit("bump version.yaml to " + version.String())
+	return gitCommit("bump version to " + version.String())
 }
