@@ -116,7 +116,7 @@ func gitAdd(file string) error {
 	return nil
 }
 
-func gitCommit(file, message string) error {
+func gitCommit(message string) error {
 	cmd := exec.Command("git", "commit", "-m", message)
 	err := cmd.Run()
 	if err != nil {
@@ -126,11 +126,11 @@ func gitCommit(file, message string) error {
 	return nil
 }
 
-// TODO Commit version constant.
 func GitCommitVersionConfig(version *Semver) error {
 	err := gitAdd("version.yaml")
 	if err != nil {
 		return err
 	}
-	return gitCommit("version.yaml", "bump version.yaml to "+version.String())
+	// Commits all staged.
+	return gitCommit("bump version.yaml to " + version.String())
 }
