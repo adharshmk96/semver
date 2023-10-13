@@ -11,7 +11,7 @@ import (
 )
 
 var dry bool
-var writeVersionFunction bool
+var writeVersionConst bool
 
 func incrementVersion(versionType string) error {
 	if dry {
@@ -50,10 +50,12 @@ func incrementVersion(versionType string) error {
 			return err
 		}
 
-		err = verman.WriteVersionConstant(projectVersion, verman.Go)
-		if err != nil {
-			fmt.Println("error writing version file.")
-			return err
+		if writeVersionConst {
+			err = verman.WriteVersionConstant(projectVersion, verman.Go)
+			if err != nil {
+				fmt.Println("error writing version file.")
+				return err
+			}
 		}
 
 		err = verman.GitCommitVersionConfig(projectVersion)
@@ -131,7 +133,7 @@ func init() {
 	rootCmd.AddCommand(upCmd)
 
 	upCmd.PersistentFlags().BoolVarP(&dry, "dry", "d", false, "dry run mode")
-	upCmd.PersistentFlags().BoolVarP(&writeVersionFunction, "write-version", "w", false, "write the version to a file")
+	upCmd.PersistentFlags().BoolVarP(&writeVersionConst, "write-version", "w", false, "write the version to cmd/version_constant.go file")
 
 	upCmd.AddCommand(majorCmd)
 	upCmd.AddCommand(minorCmd)
