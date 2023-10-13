@@ -28,6 +28,5 @@ jobs:
           files: |
             out/linux/semver
             out/win64/semver.exe
-            out/mac/semver
       - name: GO list
         run: GOPROXY=proxy.golang.org go list -m github.com/adharshmk96/semver@${{ github.ref_name }}

@@ -1,4 +1,4 @@
-build: build-linux build-windows build-mac
+build: build-linux build-windows
 
 test:
 	@go test ./...
@@ -8,6 +8,3 @@ build-linux:
 
 build-windows:
 	@GOOS=windows GOARCH=amd64 go build -o ./out/win64/semver.exe .
-
-build-mac:
-	@GOOS=darwin GOARCH=amd64 go build -o ./out/mac/semver .
