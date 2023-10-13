@@ -2,7 +2,7 @@
 
 ## Overview
 
-`semver` is a Command-Line Interface (CLI) tool designed to manage your project's semantic versioning effortlessly. Utilizing a straightforward `version.yaml` file to store the current version of the project and leveraging git tags for version management, `semver` ensures a consistent and systematic approach to managing your project’s versions, streamlining the release process and maintaining a clean history of your project’s evolution.
+`semver` is a Command-Line Interface (CLI) tool designed to manage your project's semantic versioning effortlessly. Utilizing a straightforward `version.yaml` file to store the current version of the project and leveraging git tags for version management.
 
 ## Prerequisites
 - Ensure Git is installed and configured on your system.
@@ -10,7 +10,13 @@
 
 ## Installation
 
-Instructions on how to install `semver` will go here. It might involve downloading the binary or using a package manager, depending on your OS.
+With Golang
+
+```bash
+go install github.com/adharshmk96/semver@latest
+```
+
+If you're facing with issues, Ensure go is setup and check GOPATH is in PATH configurations.
 
 ## Getting Started
 
