@@ -9,17 +9,22 @@ const (
 func WriteVersionConstant(version *Semver, language lang) error {
 	switch language {
 	case Go:
-		return writeGoCmdVersionConstant(version)
+		filePath, err := writeGoCmdVersionConstant(version)
+		if err != nil {
+			return err
+		}
+
+		return gitAdd(filePath)
 	default:
 		return nil
 	}
 }
 
-func writeGoCmdVersionConstant(version *Semver) error {
+func writeGoCmdVersionConstant(version *Semver) (string, error) {
 	versionString := version.String()
 	fileContent := "package cmd\n\nconst Version = \"" + versionString + "\"\n"
 	filePath := "cmd/version_constant.go"
 
-	return writeToFile(filePath, fileContent)
+	return filePath, writeToFile(filePath, fileContent)
 
 }

@@ -106,18 +106,31 @@ func GitRemoveAllRemoteTags() error {
 	return nil
 }
 
-func GitCommitVersionConfig(version *Semver) error {
-	cmd := exec.Command("git", "add", "version.yaml")
+func gitAdd(file string) error {
+	cmd := exec.Command("git", "add", file)
 	err := cmd.Run()
 	if err != nil {
 		return err
 	}
 
-	cmd = exec.Command("git", "commit", "-m", "bump version.yaml to "+version.String())
-	err = cmd.Run()
+	return nil
+}
+
+func gitCommit(file, message string) error {
+	cmd := exec.Command("git", "commit", "-m", message)
+	err := cmd.Run()
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+// TODO Commit version constant.
+func GitCommitVersionConfig(version *Semver) error {
+	err := gitAdd("version.yaml")
+	if err != nil {
+		return err
+	}
+	return gitCommit("version.yaml", "bump version.yaml to "+version.String())
 }
