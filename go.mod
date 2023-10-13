@@ -1,12 +1,11 @@
 module github.com/adharshmk96/semver
 
-go 1.21.0
+go 1.21
 
 require (
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/viper v1.17.0
 	github.com/stretchr/testify v1.8.4
-	golang.org/x/mod v0.12.0
 )
 
 require (
