@@ -105,3 +105,19 @@ func GitRemoveAllRemoteTags() error {
 
 	return nil
 }
+
+func GitCommitVersionConfig(version *Semver) error {
+	cmd := exec.Command("git", "add", "version.yaml")
+	err := cmd.Run()
+	if err != nil {
+		return err
+	}
+
+	cmd = exec.Command("git", "commit", "-m", "bump version.yaml to "+version.String())
+	err = cmd.Run()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

@@ -34,3 +34,18 @@ func WriteVersionToConfig(version *Semver) error {
 func RemoveConfig() error {
 	return os.RemoveAll("version.yaml")
 }
+
+func writeToFile(filePath string, fileContent string) error {
+	f, err := os.Create(filePath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	_, err = f.WriteString(fileContent)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
