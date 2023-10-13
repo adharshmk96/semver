@@ -18,7 +18,6 @@ var resetCmd = &cobra.Command{
 		err := verman.RemoveConfig()
 		if err != nil {
 			fmt.Println("error removing configuration file.")
-			return
 		}
 
 		fmt.Println("removing all git tags...")

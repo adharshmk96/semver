@@ -17,7 +17,6 @@ var getCmd = &cobra.Command{
 	Long:  `Reads the version.yaml file and displays the current version of the project.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if !configExists {
-			fmt.Println("no configuration found. run `semver init` to initialize the configuration.")
 			return
 		}
 

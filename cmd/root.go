@@ -6,6 +6,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"slices"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -38,10 +39,10 @@ func init() {
 	err := viper.ReadInConfig()
 	if err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			// if command is init, don't display error
-			if len(os.Args) > 1 && os.Args[1] != "init" {
+			escape := []string{"init", "reset", "version"}
+			if len(os.Args) > 1 && !slices.Contains(escape, os.Args[1]) {
 				fmt.Println("no version.yaml configuration found. run `semver init` to initialize the configuration.")
-				os.Exit(1)
+				os.Exit(0)
 			} else {
 				configExists = false
 			}

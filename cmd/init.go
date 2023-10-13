@@ -23,10 +23,13 @@ func initializeVersion(args []string) (version *verman.Semver, useGitTag bool, e
 	if err != nil {
 		if errors.Is(err, verman.ErrGettingGitTag) {
 			fmt.Println("no git tags found. setting version to v0.0.0")
+			err = nil
 		}
 		if errors.Is(err, verman.ErrInvalidVersionFormat) {
 			fmt.Println("latest git tag is not a valid semver tag. setting version to v0.0.0")
+			err = nil
 		}
+		version = &verman.Semver{Patch: 1}
 	} else {
 		fmt.Println("latest git tag found:", version.String())
 		useGitTag = true
@@ -71,11 +74,11 @@ var initCmd = &cobra.Command{
 This file will contain the current version of the project.
 
 It will get latest tag from git and set it as the current version, if the git tag is a semver tag.
-If no git tags are found, it will set the version to 0.0.0`,
+If no git tags are found, it will set the version to 0.0.1`,
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		if configExists {
-			fmt.Println("configuration already exists. run `semver get` to display the current version.")
+			fmt.Println("configuration already exists. run `semver get` to display the current version or `semver reset` to reset all tags and config.")
 			return
 		}
 
