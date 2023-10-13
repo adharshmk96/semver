@@ -3,6 +3,7 @@ package verman
 import (
 	"fmt"
 	"os/exec"
+	"runtime"
 	"strings"
 )
 
@@ -29,13 +30,18 @@ func GitRemoveTag(semver *Semver) error {
 	return nil
 }
 
-func GetVersionFromGitTag() (string, error) {
+func GetVersionFromGitTag() (*Semver, error) {
 	cmd := exec.Command("git", "describe", "--tags", "--abbrev=0")
 	output, err := cmd.Output()
 	if err != nil {
-		return "", fmt.Errorf("error getting last git tag: %v", err)
+		return nil, ErrGettingGitTag
 	}
-	return strings.TrimSpace(string(output)), nil
+	versionString := strings.TrimSpace(string(output))
+	version, err := Parse(versionString)
+	if err != nil {
+		return nil, err
+	}
+	return version, nil
 }
 
 func GitPushTag(semver *Semver) error {
@@ -73,23 +79,28 @@ func GitRemoveLocalTag(semver *Semver) error {
 }
 
 // reset all tags
-func GitRemoveAllTags() error {
-	cmd := exec.Command("git", "tag", "-d", "$(git tag -l)")
+func GitRemoveAllLocalTags() error {
+	var cmd *exec.Cmd
+
+	if runtime.GOOS == "windows" {
+		cmd = exec.Command("cmd", "/C", "for /f \"delims=\" %i in ('git tag -l') do git tag -d %i")
+	} else {
+		cmd = exec.Command("bash", "-c", "git tag -d $(git tag -l)")
+	}
 
 	err := cmd.Run()
 	if err != nil {
-		return ErrCreatingGitTag
+		return err
 	}
 
 	return nil
 }
-
 func GitRemoveAllRemoteTags() error {
 	cmd := exec.Command("git", "push", "--delete", "origin", "$(git tag -l)")
 
 	err := cmd.Run()
 	if err != nil {
-		return ErrCreatingGitTag
+		return err
 	}
 
 	return nil

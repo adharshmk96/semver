@@ -4,44 +4,63 @@ Copyright © 2023 Adharsh M dev@adharsh.in
 package cmd
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/adharshmk96/semver/pkg/verman"
 	"github.com/spf13/cobra"
 )
 
-func initializeVersion() (version *verman.Semver, useGitTag bool, err error) {
+func initializeVersion(args []string) (version *verman.Semver, useGitTag bool, err error) {
 	useGitTag = false
-	lastGitTag, err := verman.GetVersionFromGitTag()
+
+	version, err = getVersionFromArg(args)
+	if err == nil {
+		return version, useGitTag, nil
+	}
+
+	version, err = verman.GetVersionFromGitTag()
 	if err != nil {
-		fmt.Println("no git tags found. setting version to v0.0.0")
-		lastGitTag = "v0.0.0"
+		if errors.Is(err, verman.ErrGettingGitTag) {
+			fmt.Println("no git tags found. setting version to v0.0.0")
+		}
+		if errors.Is(err, verman.ErrInvalidVersionFormat) {
+			fmt.Println("latest git tag is not a valid semver tag. setting version to v0.0.0")
+		}
 	} else {
-		fmt.Println("found git tag:", lastGitTag)
+		fmt.Println("latest git tag found:", version.String())
 		useGitTag = true
 	}
 
-	version, err = verman.Parse(lastGitTag)
-	if err != nil {
-		fmt.Println("invalid version from git tag. setting version to v0.0.0")
-	}
 	return version, useGitTag, err
 }
 
 func setVersion(version *verman.Semver, useGitTag bool) error {
-	fmt.Println("setting version to ", version.String(), "...")
+	fmt.Println("setting current version:", version.String(), "...")
 	if err := verman.WriteVersionToConfig(version); err != nil {
 		return fmt.Errorf("error writing to configuration file: %w", err)
 	}
 
 	if !useGitTag {
-		fmt.Println("creating git tag...")
+		fmt.Printf("creating git tag %s...\n", version.String())
 		if err := verman.GitTagVersion(version); err != nil {
 			return fmt.Errorf("error creating git tag: check if the tag already exists: %w", err)
 		}
 	}
 
 	return nil
+}
+
+func getVersionFromArg(args []string) (*verman.Semver, error) {
+	if len(args) == 0 {
+		return nil, fmt.Errorf("version not provided")
+	}
+	version, err := verman.Parse(args[0])
+	if err != nil {
+		return nil, fmt.Errorf("invalid version: %w", err)
+	}
+
+	return version, nil
 }
 
 // initCmd represents the init command
@@ -53,6 +72,7 @@ This file will contain the current version of the project.
 
 It will get latest tag from git and set it as the current version, if the git tag is a semver tag.
 If no git tags are found, it will set the version to 0.0.0`,
+	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		if configExists {
 			fmt.Println("configuration already exists. run `semver get` to display the current version.")
@@ -61,7 +81,7 @@ If no git tags are found, it will set the version to 0.0.0`,
 
 		fmt.Println("initializing configuration...")
 
-		version, useGitTag, err := initializeVersion()
+		version, useGitTag, err := initializeVersion(args)
 		if err != nil {
 			fmt.Println(err)
 			return
