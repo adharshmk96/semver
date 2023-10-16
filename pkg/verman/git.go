@@ -7,6 +7,15 @@ import (
 	"strings"
 )
 
+func IsGitRepository() bool {
+	cmd := exec.Command("git", "rev-parse", "--is-inside-work-tree")
+	out, err := cmd.Output()
+	if err != nil {
+		return false
+	}
+	return strings.TrimSpace(string(out)) == "true"
+}
+
 func GitTagVersion(semver *Semver) error {
 	cmd := exec.Command("git", "tag", semver.String())
 
@@ -96,7 +105,13 @@ func GitRemoveAllLocalTags() error {
 	return nil
 }
 func GitRemoveAllRemoteTags() error {
-	cmd := exec.Command("git", "push", "--delete", "origin", "$(git tag -l)")
+	var cmd *exec.Cmd
+
+	if runtime.GOOS == "windows" {
+		cmd = exec.Command("cmd", "/C", "for /f \"delims=\" %i in ('git tag -l') do git push --delete origin %i")
+	} else {
+		cmd = exec.Command("bash", "-c", "git push --delete origin $(git tag -l)")
+	}
 
 	err := cmd.Run()
 	if err != nil {

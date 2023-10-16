@@ -20,6 +20,11 @@ var resetCmd = &cobra.Command{
 			fmt.Println("error removing configuration file.")
 		}
 
+		if !verman.IsGitRepository() {
+			fmt.Println("not a git repository.")
+			return
+		}
+
 		fmt.Println("removing all git tags...")
 		err = verman.GitRemoveAllLocalTags()
 		if err != nil {

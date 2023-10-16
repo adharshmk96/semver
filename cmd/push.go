@@ -20,6 +20,11 @@ var pushCmd = &cobra.Command{
 			return
 		}
 
+		if !verman.IsGitRepository() {
+			fmt.Println("not a git repository.")
+			return
+		}
+
 		fmt.Println("pushing git tag:", version.String())
 		err = verman.GitPushTag(version)
 		if err != nil {

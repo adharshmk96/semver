@@ -6,7 +6,9 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"slices"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -31,9 +33,18 @@ func Execute() {
 	}
 }
 
+func gitTopLevelDirectory() string {
+	cmd := exec.Command("git", "rev-parse", "--show-toplevel")
+	out, err := cmd.Output()
+	if err != nil {
+		return "."
+	}
+	return strings.TrimSpace(string(out))
+}
+
 func init() {
 	viper.SetConfigType("yaml")
-	viper.AddConfigPath(".")
+	viper.AddConfigPath(gitTopLevelDirectory())
 	viper.SetConfigName("version")
 	err := viper.ReadInConfig()
 	if err != nil {

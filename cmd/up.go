@@ -50,16 +50,18 @@ func incrementVersion(versionType string) error {
 			return err
 		}
 
-		err = verman.GitCommitVersionConfig(projectVersion)
-		if err != nil {
-			fmt.Println("error committing configuration file.")
-			return err
-		}
+		if verman.IsGitRepository() {
+			err = verman.GitCommitVersionConfig(projectVersion)
+			if err != nil {
+				fmt.Println("error committing configuration file.")
+				return err
+			}
 
-		err = verman.GitTagVersion(projectVersion)
-		if err != nil {
-			fmt.Println("error creating git tag: check if the tag already exists.")
-			return err
+			err = verman.GitTagVersion(projectVersion)
+			if err != nil {
+				fmt.Println("error creating git tag: check if the tag already exists.")
+				return err
+			}
 		}
 	}
 

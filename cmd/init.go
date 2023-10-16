@@ -19,6 +19,12 @@ func initializeVersion(args []string) (version *verman.Semver, useGitTag bool, e
 		return version, useGitTag, nil
 	}
 
+	if !verman.IsGitRepository() {
+		fmt.Println("not a git repository. setting version to v0.0.1")
+		version = &verman.Semver{Patch: 1}
+		return version, useGitTag, nil
+	}
+
 	version, err = verman.GetVersionFromGitTag()
 	if err != nil {
 		if errors.Is(err, verman.ErrGettingGitTag) {
@@ -44,7 +50,7 @@ func setVersion(version *verman.Semver, useGitTag bool) error {
 		return fmt.Errorf("error writing to configuration file: %w", err)
 	}
 
-	if !useGitTag {
+	if !useGitTag && verman.IsGitRepository() {
 		fmt.Printf("creating git tag %s...\n", version.String())
 		if err := verman.GitTagVersion(version); err != nil {
 			return fmt.Errorf("error creating git tag: check if the tag already exists: %w", err)
