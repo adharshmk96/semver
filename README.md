@@ -2,7 +2,7 @@
 
 ## Overview
 
-`semver` is a Command-Line Interface (CLI) tool designed to manage your project's semantic versioning effortlessly. Utilizing a straightforward `version.yaml` file to store the current version of the project and leveraging git tags for version management.
+`semver` is a Command-Line Interface (CLI) tool designed to manage your project's semantic versioning effortlessly. Utilizing a straightforward `.version.yaml` file to store the current version of the project and leveraging git tags for version management.
 
 ## Installation
 
@@ -24,7 +24,7 @@ Once you've installed `semver`, navigate to your project directory and run:
 semver init
 ```
 
-This command initializes the `semver` configuration, creating a `version.yaml` file that stores the current version of the project.
+This command initializes the `semver` configuration, creating a `.version.yaml` file that stores the current version of the project.
 It will also try to get the latest tag from local git repository and set it as the current version if valid.
 
 ### Display the Current Project Version
@@ -35,7 +35,7 @@ To display the current version of your project, use:
 semver get
 ```
 
-This command retrieves the version information from the `version.yaml` file.
+This command retrieves the version information from the `.version.yaml` file.
 
 ### Increment the Version
 
@@ -45,7 +45,7 @@ To increment your project's semantic version, use:
 semver up (major|minor|patch|beta|alpha|rc)
 ```
 
-The `up` command will automatically increment the version by one (following semantic versioning rules) and update the `version.yaml` file accordingly. Additionally, it will tag the git repository with the new version.
+The `up` command will automatically increment the version by one (following semantic versioning rules) and update the `.version.yaml` file accordingly. Additionally, it will tag the git repository with the new version.
 
 ### Push the Current Version
 

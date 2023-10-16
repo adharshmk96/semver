@@ -28,11 +28,11 @@ func WriteVersionToConfig(version *Semver) error {
 	viper.Set("beta", version.Beta)
 	viper.Set("rc", version.RC)
 
-	return viper.WriteConfigAs("version.yaml")
+	return viper.WriteConfigAs(".version.yaml")
 }
 
 func RemoveConfig() error {
-	return os.RemoveAll("version.yaml")
+	return os.RemoveAll(".version.yaml")
 }
 
 func writeToFile(filePath string, fileContent string) error {

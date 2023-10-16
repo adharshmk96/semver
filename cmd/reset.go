@@ -10,6 +10,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var resetRemote bool
+
 var resetCmd = &cobra.Command{
 	Use:   "reset",
 	Short: "(CAUTION) Reset all tags and remove the semver configuration",
@@ -32,10 +34,21 @@ var resetCmd = &cobra.Command{
 			return
 		}
 
+		if resetRemote {
+			fmt.Println("removing all remote git tags...")
+			err = verman.GitRemoveAllRemoteTags()
+			if err != nil {
+				fmt.Println("error removing remote git tags.", err)
+				return
+			}
+		}
+
 		fmt.Println("done. run `semver init` to initialize again...")
 	},
 }
 
 func init() {
+	resetCmd.Flags().BoolVarP(&resetRemote, "remote", "r", false, "remove remote tags as well")
+
 	rootCmd.AddCommand(resetCmd)
 }

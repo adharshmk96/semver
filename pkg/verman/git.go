@@ -65,8 +65,8 @@ func GitPushTag(semver *Semver) error {
 }
 
 // remove tag
-func GitRemoveRemoteTag(semver *Semver) error {
-	cmd := exec.Command("git", "push", "--delete", "origin", semver.String())
+func GitRemoveRemoteTag(tag string) error {
+	cmd := exec.Command("git", "push", "--delete", "origin", tag)
 
 	err := cmd.Run()
 	if err != nil {
@@ -76,8 +76,9 @@ func GitRemoveRemoteTag(semver *Semver) error {
 	return nil
 }
 
-func GitRemoveLocalTag(semver *Semver) error {
-	cmd := exec.Command("git", "tag", "-d", semver.String())
+// remove tag
+func GitRemoveLocalTag(tag string) error {
+	cmd := exec.Command("git", "tag", "-d", tag)
 
 	err := cmd.Run()
 	if err != nil {
@@ -104,6 +105,8 @@ func GitRemoveAllLocalTags() error {
 
 	return nil
 }
+
+// reset all remote tags
 func GitRemoveAllRemoteTags() error {
 	var cmd *exec.Cmd
 
@@ -142,8 +145,9 @@ func gitCommit(message string) error {
 }
 
 func GitCommitVersionConfig(version *Semver) error {
-	err := gitAdd("version.yaml")
+	err := gitAdd(".version.yaml")
 	if err != nil {
+		fmt.Println(err)
 		return err
 	}
 	// Commits all staged.

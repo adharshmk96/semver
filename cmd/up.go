@@ -54,6 +54,7 @@ func incrementVersion(versionType string) error {
 			err = verman.GitCommitVersionConfig(projectVersion)
 			if err != nil {
 				fmt.Println("error committing configuration file.")
+				fmt.Println(err)
 				return err
 			}
 

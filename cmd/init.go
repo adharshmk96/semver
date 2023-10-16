@@ -76,7 +76,7 @@ func getVersionFromArg(args []string) (*verman.Semver, error) {
 var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Initialize the semver configuration",
-	Long: `Initialize the semver configuration. This will create a version.yaml file in the current directory.
+	Long: `Initialize the semver configuration. This will create a .version.yaml file in the current directory.
 This file will contain the current version of the project.
 
 It will get latest tag from git and set it as the current version, if the git tag is a semver tag.
