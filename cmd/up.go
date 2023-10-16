@@ -50,14 +50,6 @@ func incrementVersion(versionType string) error {
 			return err
 		}
 
-		if writeVersionConst {
-			err = verman.WriteVersionConstant(projectVersion, verman.Go)
-			if err != nil {
-				fmt.Println("error writing version file.")
-				return err
-			}
-		}
-
 		err = verman.GitCommitVersionConfig(projectVersion)
 		if err != nil {
 			fmt.Println("error committing configuration file.")

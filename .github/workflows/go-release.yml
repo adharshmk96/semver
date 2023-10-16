@@ -17,16 +17,11 @@ jobs:
         with:
           go-version: '1.21' # The Go version to download (if necessary) and use.
      
-      - name: Build
-        run: make build
-
-      - name: Release
-        uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v5
         with:
-          generate_release_notes: true
-          files: |
-            out/linux/semver
-            out/win64/semver.exe
-      - name: GO list
-        run: GOPROXY=proxy.golang.org go list -m github.com/adharshmk96/semver@${{ github.ref_name }}
+          distribution: goreleaser
+          version: latest
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
