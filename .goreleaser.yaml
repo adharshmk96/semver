@@ -18,7 +18,7 @@ builds:
       - darwin
     goarch:
       - amd64
-      - arm6
+      - arm64
 
 archives:
   - format: binary
