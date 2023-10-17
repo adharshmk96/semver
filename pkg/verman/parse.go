@@ -94,6 +94,23 @@ func Parse(version string) (*Semver, error) {
 	return semver, nil
 }
 
+func (s *Semver) UpdateSemver(versionType string) {
+	switch versionType {
+	case "major":
+		s.IncrementMajor()
+	case "minor":
+		s.IncrementMinor()
+	case "patch":
+		s.IncrementPatch()
+	case "alpha":
+		s.IncrementAlpha()
+	case "beta":
+		s.IncrementBeta()
+	case "rc":
+		s.IncrementRC()
+	}
+}
+
 func (s *Semver) String() string {
 	version := fmt.Sprintf("v%d.%d.%d", s.Major, s.Minor, s.Patch)
 	if s.RC > 0 {
