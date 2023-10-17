@@ -20,9 +20,47 @@ func logAndExecute(message string, action func() error) {
 	}
 }
 
+func resetVersionFromArgs(args []string) {
+	if len(args) == 0 {
+		return
+	}
+	version := args[0]
+
+	projectVersion, err := verman.Parse(version)
+	if err != nil {
+		fmt.Println("error parsing version.")
+		return
+	}
+
+	err = verman.WriteVersionToConfig(projectVersion)
+	if err != nil {
+		fmt.Println("error writing to configuration file.")
+		return
+	}
+
+	fmt.Println("updated version:", projectVersion.String())
+
+	if !verman.IsGitRepository() {
+		return
+	}
+
+	err = verman.GitCommitVersionConfig(projectVersion)
+	if err != nil {
+		fmt.Println("error committing configuration file.")
+		return
+	}
+
+	err = verman.GitTagVersion(projectVersion)
+	if err != nil {
+		fmt.Println("error creating git tag.")
+		return
+	}
+}
+
 var resetCmd = &cobra.Command{
 	Use:   "reset",
 	Short: "(CAUTION) Reset all tags and remove the semver configuration",
+	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		logAndExecute("resetting semver configuration...", verman.RemoveConfig)
 
@@ -36,6 +74,9 @@ var resetCmd = &cobra.Command{
 		}
 
 		logAndExecute("removing all local git tags...", verman.GitRemoveAllLocalTags)
+
+		resetVersionFromArgs(args)
+
 		fmt.Println("done. run `semver init` to initialize again...")
 	},
 }
