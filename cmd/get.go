@@ -20,13 +20,13 @@ var getCmd = &cobra.Command{
 			return
 		}
 
-		version, err := verman.GetVersionFromConfig()
+		semver, err := verman.GetVersionFromConfig()
 		if err != nil {
 			fmt.Println("error reading configuration file.")
 			return
 		}
 
-		fmt.Println(version.String())
+		fmt.Println(semver.String())
 	},
 }
 

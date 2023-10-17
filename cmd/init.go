@@ -54,12 +54,12 @@ var (
 	ErrCreatingTag   = errors.New("error creating git tag: check if the tag already exists")
 )
 
-func setVersion(version *verman.Semver, useGitTag bool) error {
+func setVersion(version *verman.Semver, usingExistingGitTag bool) error {
 	if err := verman.WriteVersionToConfig(version); err != nil {
 		return ErrWritingConfig
 	}
 
-	if !useGitTag && verman.IsGitRepository() {
+	if !usingExistingGitTag && verman.IsGitRepository() {
 		if err := verman.GitCommitVersionConfig(version); err != nil {
 			return err
 		}
@@ -120,10 +120,10 @@ If no git tags are found, it will set the version to 0.0.1`,
 
 		fmt.Println("initializing configuration...")
 
-		projectVersion, useGitTag, err := initializeVersion(args)
-		printVersionInitialization(projectVersion, useGitTag, err)
+		projectVersion, usingExistingGitTag, err := initializeVersion(args)
+		printVersionInitialization(projectVersion, usingExistingGitTag, err)
 
-		err = setVersion(projectVersion, useGitTag)
+		err = setVersion(projectVersion, usingExistingGitTag)
 		printSetVersionActions(projectVersion, err)
 
 		fmt.Println("semver configuration initialized successfully. run `semver get` to display the current version.")
