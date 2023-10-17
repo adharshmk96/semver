@@ -2,6 +2,8 @@
 
 `semver` is a command-line interface tool designed to simplify and streamline the management of your project's semantic versioning. It uses a `.version.yaml` file to store the project's current version and also uses git tags for version management. When updating the version, `semver` will also tag the git repository with the new version.
 
+[![Release](https://github.com/adharshmk96/semver/actions/workflows/go-release.yml/badge.svg)](https://github.com/adharshmk96/semver/actions/workflows/go-release.yml)
+
 ## 🛠 Installation
 
 With Golang
