@@ -34,3 +34,15 @@ archives:
 changelog:
   sort: asc
   use: github
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+    include:
+      - "^feat:"
+      - "^fix:"
+      - "^refactor:"
+      - "^chore:"
+      - "^perf:"
+
+
