@@ -13,6 +13,9 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - run: git fetch --force --tags
       - uses: actions/setup-go@v4
         with:
           go-version: '1.21' # The Go version to download (if necessary) and use.
