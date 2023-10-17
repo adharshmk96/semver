@@ -14,170 +14,144 @@ var dry bool
 var writeVersionConst bool
 
 func incrementVersion(versionType string) (*verman.Semver, error) {
-	if dry {
-		fmt.Println("dry run...")
-	}
+	printIfDryRun("dry run...")
 	projectVersion, err := verman.GetVersionFromConfig()
-	fmt.Println("current version:", projectVersion.String())
 	if err != nil {
 		fmt.Println("error reading configuration file.")
 		return projectVersion, err
 	}
-
+	fmt.Println("current version:", projectVersion.String())
 	projectVersion.UpdateSemver(versionType)
-
 	return projectVersion, nil
-
 }
 
-func commitUpdatedVersion(projectVersion *verman.Semver) error {
-
+func printIfDryRun(msg string) {
 	if dry {
-		fmt.Println("updated version:", projectVersion.String())
+		fmt.Println(msg)
+	}
+}
+
+func commitAndPrintVersion(version *verman.Semver) {
+	err := commitUpdatedVersion(version)
+	if err != nil {
+		return
+	}
+	fmt.Println("updated version:", version.String())
+}
+
+func commitUpdatedVersion(version *verman.Semver) error {
+	printIfDryRun(fmt.Sprintf("updated version: %s", version.String()))
+	if dry {
 		return nil
 	}
 
-	err := verman.WriteVersionToConfig(projectVersion)
+	err := verman.WriteVersionToConfig(version)
 	if err != nil {
 		fmt.Println("error writing to configuration file.")
 		return err
 	}
 
-	if verman.IsGitRepository() {
-		err = verman.GitCommitVersionConfig(projectVersion)
-		if err != nil {
-			fmt.Println("error committing configuration file.")
-			fmt.Println(err)
-			return err
-		}
-
-		err = verman.GitTagVersion(projectVersion)
-		if err != nil {
-			fmt.Println("error creating git tag: check if the tag already exists.")
-			return err
-		}
+	if !verman.IsGitRepository() {
+		return nil
 	}
 
-	fmt.Println("updated version:", projectVersion.String())
+	err = verman.GitCommitVersionConfig(version)
+	if err != nil {
+		fmt.Println("error committing configuration file.")
+		return err
+	}
+
+	err = verman.GitTagVersion(version)
+	if err != nil {
+		fmt.Println("error creating git tag: check if the tag already exists.")
+		return err
+	}
+
 	return nil
 }
 
 func getSubVersionFromArgs(args []string) string {
-	if len(args) == 0 {
-		return ""
-	}
-	if args[0] == "alpha" || args[0] == "beta" || args[0] == "rc" {
-		return args[0]
+	if len(args) > 0 {
+		switch args[0] {
+		case "alpha", "beta", "rc":
+			return args[0]
+		}
 	}
 	return ""
 }
 
-var majorCmd = &cobra.Command{
-	Use:   "major",
-	Short: "Increment the major version by one",
-	Run: func(cmd *cobra.Command, args []string) {
-		projectVersion, err := incrementVersion("major")
-		if err != nil {
-			fmt.Println("error incrementing version.")
-		}
+func updateAndCommitVersion(versionType string, args []string) {
+	projectVersion, err := incrementVersion(versionType)
+	if err != nil {
+		fmt.Println("error incrementing version.")
+		return
+	}
 
-		subVersion := getSubVersionFromArgs(args)
-		if subVersion != "" {
-			projectVersion.UpdateSemver(subVersion)
-		}
+	subVersion := getSubVersionFromArgs(args)
+	if subVersion != "" {
+		projectVersion.UpdateSemver(subVersion)
+	}
 
-		commitUpdatedVersion(projectVersion)
-	},
+	commitAndPrintVersion(projectVersion)
 }
 
-var minorCmd = &cobra.Command{
-	Use:   "minor",
-	Short: "Increment the minor version by one",
-	Run: func(cmd *cobra.Command, args []string) {
-		projectVersion, err := incrementVersion("minor")
-		if err != nil {
-			fmt.Println("error incrementing version.")
-		}
-
-		subVersion := getSubVersionFromArgs(args)
-		if subVersion != "" {
-			projectVersion.UpdateSemver(subVersion)
-		}
-
-		commitUpdatedVersion(projectVersion)
+var versionCmds = []*cobra.Command{
+	{
+		Use:   "major",
+		Short: "Increment the major version by one",
+		Run: func(cmd *cobra.Command, args []string) {
+			updateAndCommitVersion("major", args)
+		},
 	},
-}
-
-var patchCmd = &cobra.Command{
-	Use:   "patch",
-	Short: "Increment the patch version by one",
-	Run: func(cmd *cobra.Command, args []string) {
-		projectVersion, err := incrementVersion("patch")
-		if err != nil {
-			fmt.Println("error incrementing version.")
-		}
-
-		subVersion := getSubVersionFromArgs(args)
-		if subVersion != "" {
-			projectVersion.UpdateSemver(subVersion)
-		}
-
-		commitUpdatedVersion(projectVersion)
+	{
+		Use:   "minor",
+		Short: "Increment the minor version by one",
+		Run: func(cmd *cobra.Command, args []string) {
+			updateAndCommitVersion("minor", args)
+		},
 	},
-}
-
-var alphaCmd = &cobra.Command{
-	Use:   "alpha",
-	Short: "Increment the alpha version by one",
-	Run: func(cmd *cobra.Command, args []string) {
-		projectVersion, err := incrementVersion("alpha")
-		if err != nil {
-			fmt.Println("error incrementing version.")
-		}
-		commitUpdatedVersion(projectVersion)
+	{
+		Use:   "patch",
+		Short: "Increment the patch version by one",
+		Run: func(cmd *cobra.Command, args []string) {
+			updateAndCommitVersion("patch", args)
+		},
 	},
-}
-
-var betaCmd = &cobra.Command{
-	Use:   "beta",
-	Short: "Increment the beta version by one",
-	Run: func(cmd *cobra.Command, args []string) {
-		projectVersion, err := incrementVersion("beta")
-		if err != nil {
-			fmt.Println("error incrementing version.")
-		}
-		commitUpdatedVersion(projectVersion)
+	{
+		Use:   "alpha",
+		Short: "Increment the alpha version by one",
+		Run: func(cmd *cobra.Command, args []string) {
+			updateAndCommitVersion("alpha", args)
+		},
 	},
-}
-
-var rcCmd = &cobra.Command{
-	Use:   "rc",
-	Short: "Increment the rc version by one",
-	Run: func(cmd *cobra.Command, args []string) {
-		projectVersion, err := incrementVersion("rc")
-		if err != nil {
-			fmt.Println("error incrementing version.")
-		}
-		commitUpdatedVersion(projectVersion)
+	{
+		Use:   "beta",
+		Short: "Increment the beta version by one",
+		Run: func(cmd *cobra.Command, args []string) {
+			updateAndCommitVersion("beta", args)
+		},
+	},
+	{
+		Use:   "rc",
+		Short: "Increment the rc version by one",
+		Run: func(cmd *cobra.Command, args []string) {
+			updateAndCommitVersion("rc", args)
+		},
 	},
 }
 
 var upCmd = &cobra.Command{
 	Use:   "up",
-	Short: "Increment the semver version by one",
-	Args:  cobra.ExactArgs(1),
+	Short: "Increment the version by one",
+	Args:  cobra.MaximumNArgs(2),
 }
 
 func init() {
 	rootCmd.AddCommand(upCmd)
-
 	upCmd.PersistentFlags().BoolVarP(&dry, "dry", "d", false, "dry run mode")
 	upCmd.PersistentFlags().BoolVarP(&writeVersionConst, "write-version", "w", false, "write the version to cmd/version_constant.go file")
 
-	upCmd.AddCommand(majorCmd)
-	upCmd.AddCommand(minorCmd)
-	upCmd.AddCommand(patchCmd)
-	upCmd.AddCommand(alphaCmd)
-	upCmd.AddCommand(betaCmd)
-	upCmd.AddCommand(rcCmd)
+	for _, cmd := range versionCmds {
+		upCmd.AddCommand(cmd)
+	}
 }

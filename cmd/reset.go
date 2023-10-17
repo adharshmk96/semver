@@ -12,15 +12,19 @@ import (
 
 var resetRemote bool
 
+// logAndExecute logs the given message, then executes the given function
+func logAndExecute(message string, action func() error) {
+	fmt.Println(message)
+	if err := action(); err != nil {
+		fmt.Printf("error: %v\n", err)
+	}
+}
+
 var resetCmd = &cobra.Command{
 	Use:   "reset",
 	Short: "(CAUTION) Reset all tags and remove the semver configuration",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("resetting semver configuration...")
-		err := verman.RemoveConfig()
-		if err != nil {
-			fmt.Println("error removing configuration file.")
-		}
+		logAndExecute("resetting semver configuration...", verman.RemoveConfig)
 
 		if !verman.IsGitRepository() {
 			fmt.Println("not a git repository.")
@@ -28,20 +32,10 @@ var resetCmd = &cobra.Command{
 		}
 
 		if resetRemote {
-			fmt.Println("removing all remote git tags...")
-			err = verman.GitRemoveAllRemoteTags()
-			if err != nil {
-				fmt.Println("error removing remote git tags.", err)
-			}
+			logAndExecute("removing all remote git tags...", verman.GitRemoveAllRemoteTags)
 		}
 
-		fmt.Println("removing all local git tags...")
-		err = verman.GitRemoveAllLocalTags()
-		if err != nil {
-			fmt.Println("error removing git tags.", err)
-			return
-		}
-
+		logAndExecute("removing all local git tags...", verman.GitRemoveAllLocalTags)
 		fmt.Println("done. run `semver init` to initialize again...")
 	},
 }

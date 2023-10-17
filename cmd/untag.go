@@ -24,6 +24,31 @@ func getVersionToRemove(args []string) string {
 	return args[0]
 }
 
+func removeRemoteTag(version string) {
+	err := verman.GitRemoveRemoteTag(version)
+	if err != nil {
+		fmt.Println("error removing remote git tag.", err)
+	}
+}
+
+func removeLocalTag(version string) {
+	err := verman.GitRemoveLocalTag(version)
+	if err != nil {
+		fmt.Println("error removing git tag.", err)
+	}
+}
+
+func printCurrentVersion() {
+	tag, err := verman.GetVersionFromGitTag()
+	if err != nil {
+		fmt.Println("error getting latest git tag.", err)
+		tag = &verman.Semver{Patch: 1}
+	}
+
+	verman.WriteVersionToConfig(tag)
+	fmt.Println("current version:", tag.String())
+}
+
 var untagCmd = &cobra.Command{
 	Use:   "untag",
 	Short: "Delete a specific tag from git (default: current tag)",
@@ -37,33 +62,15 @@ var untagCmd = &cobra.Command{
 		}
 
 		if untagRemote {
-			err := verman.GitRemoveRemoteTag(versionToRemove)
-			if err != nil {
-				fmt.Println("error removing remote git tag.", err)
-				return
-			}
+			removeRemoteTag(versionToRemove)
 		}
 
-		err := verman.GitRemoveLocalTag(versionToRemove)
-		if err != nil {
-			fmt.Println("error removing git tag.", err)
-			return
-		}
-
-		tag, err := verman.GetVersionFromGitTag()
-		if err != nil {
-			fmt.Println("error getting latest git tag.", err)
-			tag = &verman.Semver{Patch: 1}
-		}
-
-		verman.WriteVersionToConfig(tag)
-		fmt.Println("current version:", tag.String())
-
+		removeLocalTag(versionToRemove)
+		printCurrentVersion()
 	},
 }
 
 func init() {
 	untagCmd.Flags().BoolVarP(&untagRemote, "remote", "r", false, "remove remote tag as well")
-
 	rootCmd.AddCommand(untagCmd)
 }
