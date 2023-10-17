@@ -36,18 +36,18 @@ var untagCmd = &cobra.Command{
 			return
 		}
 
-		err := verman.GitRemoveLocalTag(versionToRemove)
-		if err != nil {
-			fmt.Println("error removing git tag.", err)
-			return
-		}
-
 		if untagRemote {
 			err := verman.GitRemoveRemoteTag(versionToRemove)
 			if err != nil {
 				fmt.Println("error removing remote git tag.", err)
 				return
 			}
+		}
+
+		err := verman.GitRemoveLocalTag(versionToRemove)
+		if err != nil {
+			fmt.Println("error removing git tag.", err)
+			return
 		}
 
 		tag, err := verman.GetVersionFromGitTag()

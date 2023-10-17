@@ -28,11 +28,11 @@ func initializeVersion(args []string) (version *verman.Semver, useGitTag bool, e
 	version, err = verman.GetVersionFromGitTag()
 	if err != nil {
 		if errors.Is(err, verman.ErrGettingGitTag) {
-			fmt.Println("no git tags found. setting version to v0.0.0")
+			fmt.Println("no git tags found. setting version to v0.0.1")
 			err = nil
 		}
 		if errors.Is(err, verman.ErrInvalidVersionFormat) {
-			fmt.Println("latest git tag is not a valid semver tag. setting version to v0.0.0")
+			fmt.Println("latest git tag is not a valid semver tag. setting version to v0.0.1")
 			err = nil
 		}
 		version = &verman.Semver{Patch: 1}
@@ -51,6 +51,12 @@ func setVersion(version *verman.Semver, useGitTag bool) error {
 	}
 
 	if !useGitTag && verman.IsGitRepository() {
+		err := verman.GitCommitVersionConfig(version)
+		if err != nil {
+			fmt.Println("error committing configuration file.")
+			return err
+		}
+
 		fmt.Printf("creating git tag %s...\n", version.String())
 		if err := verman.GitTagVersion(version); err != nil {
 			return fmt.Errorf("error creating git tag: check if the tag already exists: %w", err)
@@ -90,13 +96,13 @@ If no git tags are found, it will set the version to 0.0.1`,
 
 		fmt.Println("initializing configuration...")
 
-		version, useGitTag, err := initializeVersion(args)
+		projectVersion, useGitTag, err := initializeVersion(args)
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
 
-		if err := setVersion(version, useGitTag); err != nil {
+		if err := setVersion(projectVersion, useGitTag); err != nil {
 			fmt.Println(err)
 			return
 		}

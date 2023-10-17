@@ -27,20 +27,19 @@ var resetCmd = &cobra.Command{
 			return
 		}
 
-		fmt.Println("removing all git tags...")
-		err = verman.GitRemoveAllLocalTags()
-		if err != nil {
-			fmt.Println("error removing git tags.", err)
-			return
-		}
-
 		if resetRemote {
 			fmt.Println("removing all remote git tags...")
 			err = verman.GitRemoveAllRemoteTags()
 			if err != nil {
 				fmt.Println("error removing remote git tags.", err)
-				return
 			}
+		}
+
+		fmt.Println("removing all local git tags...")
+		err = verman.GitRemoveAllLocalTags()
+		if err != nil {
+			fmt.Println("error removing git tags.", err)
+			return
 		}
 
 		fmt.Println("done. run `semver init` to initialize again...")
