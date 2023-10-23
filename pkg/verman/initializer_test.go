@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/adharshmk96/semver/pkg/verman"
+	"github.com/adharshmk96/semver/pkg/verman/core"
 	"github.com/adharshmk96/semver/testutils"
 	"github.com/stretchr/testify/assert"
 )
@@ -26,7 +27,7 @@ func TestBuildContext(t *testing.T) {
 		args := []string{}
 		ctx := verman.BuildContext(args, false)
 
-		assert.Equal(t, verman.SourceNone, ctx.SemverSource)
+		assert.Equal(t, core.SourceNone, ctx.SemverSource)
 		assert.Empty(t, ctx.CurrentVersion)
 	})
 
@@ -39,7 +40,7 @@ func TestBuildContext(t *testing.T) {
 		args := []string{}
 		ctx := verman.BuildContext(args, false)
 
-		assert.Equal(t, verman.SourceNone, ctx.SemverSource)
+		assert.Equal(t, core.SourceNone, ctx.SemverSource)
 		assert.Empty(t, ctx.CurrentVersion)
 	})
 
@@ -52,7 +53,7 @@ func TestBuildContext(t *testing.T) {
 		args := []string{}
 		ctx := verman.BuildContext(args, false)
 
-		assert.Equal(t, verman.SourceGit, ctx.SemverSource)
+		assert.Equal(t, core.SourceGit, ctx.SemverSource)
 		assert.Equal(t, 1, ctx.CurrentVersion.Major)
 		assert.Equal(t, 0, ctx.CurrentVersion.Minor)
 		assert.Equal(t, 0, ctx.CurrentVersion.Patch)
@@ -70,7 +71,7 @@ func TestBuildContext(t *testing.T) {
 		args := []string{}
 		ctx := verman.BuildContext(args, false)
 
-		assert.Equal(t, verman.SourceNone, ctx.SemverSource)
+		assert.Equal(t, core.SourceNone, ctx.SemverSource)
 		assert.Equal(t, 0, ctx.CurrentVersion.Major)
 		assert.Equal(t, 0, ctx.CurrentVersion.Minor)
 		assert.Equal(t, 0, ctx.CurrentVersion.Patch)
@@ -98,7 +99,7 @@ func TestBuildContext(t *testing.T) {
 		assert.Equal(t, 0, ctxVersion.Beta)
 		assert.Equal(t, 1, ctxVersion.RC)
 
-		assert.Equal(t, verman.SourceFile, ctx.SemverSource)
+		assert.Equal(t, core.SourceFile, ctx.SemverSource)
 
 	})
 
@@ -112,7 +113,7 @@ func TestBuildContext(t *testing.T) {
 		args := []string{}
 		ctx := verman.BuildContext(args, false)
 
-		assert.Equal(t, verman.SourceNone, ctx.SemverSource)
+		assert.Equal(t, core.SourceNone, ctx.SemverSource)
 		assert.Empty(t, ctx.CurrentVersion)
 	})
 
@@ -132,7 +133,7 @@ func TestBuildContext(t *testing.T) {
 
 		assert.Empty(t, ctxVersion)
 
-		assert.Equal(t, verman.SourceNone, ctx.SemverSource)
+		assert.Equal(t, core.SourceNone, ctx.SemverSource)
 	})
 
 	t.Run("valid git tag and invalid .version file", func(t *testing.T) {
@@ -156,7 +157,7 @@ func TestBuildContext(t *testing.T) {
 		assert.Equal(t, 0, ctxVersion.Beta)
 		assert.Equal(t, 0, ctxVersion.RC)
 
-		assert.Equal(t, verman.SourceGit, ctx.SemverSource)
+		assert.Equal(t, core.SourceGit, ctx.SemverSource)
 	})
 
 	t.Run("valid git tag and valid .version file", func(t *testing.T) {
@@ -180,7 +181,7 @@ func TestBuildContext(t *testing.T) {
 		assert.Equal(t, 0, ctxVersion.Beta)
 		assert.Equal(t, 0, ctxVersion.RC)
 
-		assert.Equal(t, verman.SourceGit, ctx.SemverSource)
+		assert.Equal(t, core.SourceGit, ctx.SemverSource)
 	})
 
 }

@@ -21,11 +21,12 @@ type GitCmd interface {
 	Revparse(ref string) (string, error)
 	TagVersion(version string) error
 	RemoveTag(version string) error
+	RemoveRemoteTag(version string) error
 	RemoveAllLocalTags() error
+	RemoveAllRemoteTags() error
 	LatestTag() (string, error)
 	PushTag(version string) error
 	PullTags(version string) error
-	RemoveAllRemoteTags() error
 	Add(files []string) error
 	Commit(message string) error
 }
@@ -144,8 +145,15 @@ func (g *gitCommands) PullTags(version string) error {
 	return err
 }
 
+func (g *gitCommands) RemoveRemoteTag(version string) error {
+	_, err := g.exec.RunCmd("push", "--delete", "origin", version)
+	return err
+}
+
 func (g *gitCommands) RemoveAllRemoteTags() error {
 	var cmd *exec.Cmd
+
+	g.exec.RunCmd("fetch", "--tags")
 
 	if runtime.GOOS == "windows" {
 		cmd = exec.Command("cmd", "/C", "for /f \"delims=\" %i in ('git tag -l') do git push --delete origin %i")

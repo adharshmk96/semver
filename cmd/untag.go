@@ -7,66 +7,37 @@ import (
 	"fmt"
 
 	"github.com/adharshmk96/semver/pkg/verman"
+	"github.com/adharshmk96/semver/pkg/verman/core"
 	"github.com/spf13/cobra"
 )
 
 var untagRemote bool
 
-func getVersionToRemove(args []string) string {
-	if len(args) == 0 {
-		version, err := verman.GetVersionFromConfig()
-		if err != nil {
-			fmt.Println("error reading configuration file.")
-			return ""
-		}
-		return version.String()
-	}
-	return args[0]
-}
-
-func removeRemoteTag(version string) {
-	err := verman.GitRemoveRemoteTag(version)
-	if err != nil {
-		fmt.Println("error removing remote git tag.", err)
-	}
-}
-
-func removeLocalTag(version string) {
-	err := verman.GitRemoveLocalTag(version)
-	if err != nil {
-		fmt.Println("error removing git tag.", err)
-	}
-}
-
-func printCurrentVersion() {
-	tag, err := verman.GetVersionFromGitTag()
-	if err != nil {
-		fmt.Println("error getting latest git tag.", err)
-		tag = &verman.Semver{Patch: 1}
-	}
-
-	verman.WriteVersionToConfig(tag)
-	fmt.Println("current version:", tag.String())
-}
-
 var untagCmd = &cobra.Command{
 	Use:   "untag",
 	Short: "Delete a specific tag from git (default: current tag)",
+	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		versionToRemove := getVersionToRemove(args)
-		fmt.Println("untagging...", versionToRemove)
+		ctx := verman.BuildContext(args, false)
 
-		if !verman.IsGitRepository() {
+		if ctx.SemverSource != core.SourceGit {
 			fmt.Println("not a git repository.")
 			return
 		}
 
-		if untagRemote {
-			removeRemoteTag(versionToRemove)
+		var tagToRemove string
+		if len(args) > 0 {
+			tagToRemove = args[0]
+		} else {
+			tagToRemove = ctx.CurrentVersion.String()
 		}
 
-		removeLocalTag(versionToRemove)
-		printCurrentVersion()
+		fmt.Println("untagging...", tagToRemove)
+
+		verman.UntagVersion(tagToRemove, untagRemote)
+
+		fmt.Println("done.")
+
 	},
 }
 

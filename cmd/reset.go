@@ -7,77 +7,43 @@ import (
 	"fmt"
 
 	"github.com/adharshmk96/semver/pkg/verman"
+	"github.com/adharshmk96/semver/pkg/verman/core"
 	"github.com/spf13/cobra"
 )
 
 var resetRemote bool
-
-// logAndExecute logs the given message, then executes the given function
-func logAndExecute(message string, action func() error) {
-	fmt.Println(message)
-	if err := action(); err != nil {
-		fmt.Printf("error: %v\n", err)
-	}
-}
-
-func resetVersionFromArgs(args []string) {
-	if len(args) == 0 {
-		return
-	}
-	version := args[0]
-
-	projectVersion, err := verman.ParseSemver(version)
-	if err != nil {
-		fmt.Println("error parsing version.")
-		return
-	}
-
-	err = verman.WriteVersionToConfig(projectVersion)
-	if err != nil {
-		fmt.Println("error writing to configuration file.")
-		return
-	}
-
-	fmt.Println("updated version:", projectVersion.String())
-
-	if !verman.IsGitRepository() {
-		return
-	}
-
-	err = verman.GitCommitVersionConfig(projectVersion)
-	if err != nil {
-		fmt.Println("error committing configuration file.")
-		return
-	}
-
-	err = verman.GitTagVersion(projectVersion)
-	if err != nil {
-		fmt.Println("error creating git tag.")
-		return
-	}
-}
 
 var resetCmd = &cobra.Command{
 	Use:   "reset",
 	Short: "(CAUTION) Reset all tags and remove the semver configuration",
 	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		logAndExecute("resetting semver configuration...", verman.RemoveConfig)
+		ctx := verman.BuildContext(args, false)
 
-		if !verman.IsGitRepository() {
-			fmt.Println("not a git repository.")
+		if ctx.SemverSource == core.SourceNone {
+			fmt.Println("semver config not found. run `semver init` to initialize the semver configuration.")
 			return
 		}
 
-		if resetRemote {
-			logAndExecute("removing all remote git tags...", verman.GitRemoveAllRemoteTags)
+		fmt.Println("resetting semver configuration...")
+		verman.ResetSemver(ctx, resetRemote)
+
+		var initVersion string
+		if len(args) > 0 {
+			initVersion = args[0]
+		} else {
+			fmt.Println("done. run `semver init` to initialize again...")
+			return
 		}
 
-		logAndExecute("removing all local git tags...", verman.GitRemoveAllLocalTags)
+		err := verman.InitializeSemver(ctx, initVersion)
+		if err != nil {
+			fmt.Println("error: initalizing semver.", err)
+			return
+		}
 
-		resetVersionFromArgs(args)
+		fmt.Println("semver configuration initialized successfully. run `semver get` to display the current version.")
 
-		fmt.Println("done. run `semver init` to initialize again...")
 	},
 }
 

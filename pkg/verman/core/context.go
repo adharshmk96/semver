@@ -1,4 +1,4 @@
-package verman
+package core
 
 import "errors"
 

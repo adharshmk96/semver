@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/adharshmk96/semver/pkg/verman"
+	"github.com/adharshmk96/semver/pkg/verman/core"
 	"github.com/spf13/cobra"
 )
 
@@ -15,28 +16,26 @@ var releaseCmd = &cobra.Command{
 	Use:   "release",
 	Short: "removes the pre-release and tags the release version",
 	Run: func(cmd *cobra.Command, args []string) {
-		ctx := verman.BuildContext(args, false)
+		dry, _ := cmd.Flags().GetBool("dry")
+		ctx := verman.BuildContext(args, dry)
 
-		if ctx.SemverSource == verman.SourceNone {
+		if ctx.SemverSource == core.SourceNone {
 			fmt.Println("semver config not found. run `semver init` to initialize the semver configuration.")
 			return
 		}
 
-		if ctx.CurrentVersion.IsPreRelease() {
+		if !ctx.CurrentVersion.IsPreRelease() {
 			fmt.Println("current version is not a pre-release.")
 			return
 		}
 
-		fmt.Println("current version:", ctx.CurrentVersion.String())
+		verman.UpdateAndCommitVersion(ctx, "release")
 
-		ctx.CurrentVersion.Release()
-
-		verman.CommitVersionLocally(ctx)
-
-		fmt.Println("updated version:", ctx.CurrentVersion.String())
+		fmt.Println(ctx.CurrentVersion.String())
 	},
 }
 
 func init() {
+	releaseCmd.Flags().BoolP("dry", "d", false, "dry run mode")
 	rootCmd.AddCommand(releaseCmd)
 }

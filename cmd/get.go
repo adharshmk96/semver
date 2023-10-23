@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/adharshmk96/semver/pkg/verman"
+	"github.com/adharshmk96/semver/pkg/verman/core"
 	"github.com/spf13/cobra"
 )
 
@@ -18,7 +19,7 @@ var getCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := verman.BuildContext(args, false)
 
-		if ctx.SemverSource == verman.SourceNone {
+		if ctx.SemverSource == core.SourceNone {
 			fmt.Println("semver config not found. run `semver init` to initialize the semver configuration.")
 			return
 		}

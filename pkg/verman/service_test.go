@@ -2,6 +2,7 @@ package verman_test
 
 import (
 	"os"
+	"os/exec"
 	"testing"
 
 	"github.com/adharshmk96/semver/pkg/commands"
@@ -17,7 +18,7 @@ func TestInitializeSemver(t *testing.T) {
 
 		ctx := verman.BuildContext([]string{}, false)
 
-		err := verman.InitializeSemver(ctx)
+		err := verman.InitializeSemver(ctx, "v0.0.1")
 		assert.NoError(t, err)
 
 		content, err := os.ReadFile(".version")
@@ -30,11 +31,14 @@ func TestInitializeSemver(t *testing.T) {
 		defer testDir()
 
 		gitCmd := commands.NewGitCmd(commands.NewGitExec())
-		gitCmd.Run("init")
+		exec.Command("git", "init").Run() //nolint:gosec // This is a test and we need to run git commands.
+		os.WriteFile("test.txt", []byte("test"), 0644)
+		exec.Command("git", "add", ".").Run()
+		exec.Command("git", "commit", "-m", "initial commit").Run()
 
 		ctx := verman.BuildContext([]string{}, false)
 
-		err := verman.InitializeSemver(ctx)
+		err := verman.InitializeSemver(ctx, "v0.0.1")
 		assert.NoError(t, err)
 
 		assert.NoFileExists(t, ".version")

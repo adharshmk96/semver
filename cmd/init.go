@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/adharshmk96/semver/pkg/verman"
+	"github.com/adharshmk96/semver/pkg/verman/core"
 	"github.com/spf13/cobra"
 )
 
@@ -23,13 +24,20 @@ If no git tags are found, it will set the version to 0.0.1`,
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := verman.BuildContext(args, false)
 
-		if ctx.SemverSource != verman.SourceNone {
+		if ctx.SemverSource != core.SourceNone {
 			fmt.Println("semver config found, run `semver get` to view the version.")
 			return
 		}
 
+		var initVersion string
+		if len(args) > 0 {
+			initVersion = args[0]
+		} else {
+			initVersion = "v0.0.1"
+		}
+
 		fmt.Println("initializing...")
-		err := verman.InitializeSemver(ctx)
+		err := verman.InitializeSemver(ctx, initVersion)
 		if err != nil {
 			fmt.Println("error: initalizing semver.", err)
 			return

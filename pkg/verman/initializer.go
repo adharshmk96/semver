@@ -6,10 +6,11 @@ import (
 	"os"
 
 	"github.com/adharshmk96/semver/pkg/commands"
+	"github.com/adharshmk96/semver/pkg/verman/core"
 	"github.com/spf13/afero"
 )
 
-func BuildContext(args []string, dry bool) *Context {
+func BuildContext(args []string, dry bool) *core.Context {
 	gitCmd := commands.NewGitCmd(commands.NewGitExec())
 	fs := afero.NewOsFs()
 	fileRepo := NewFileRepo(fs)
@@ -19,7 +20,7 @@ func BuildContext(args []string, dry bool) *Context {
 
 	source, currentVersion := getVersion(gitCmd, fileRepo)
 
-	return &Context{
+	return &core.Context{
 		WorkDir:        workDir,
 		CurrentVersion: currentVersion,
 		DryRun:         dry,
@@ -40,43 +41,43 @@ func determineWorkDir(gitCmd commands.GitCmd) string {
 	return workDir
 }
 
-func getVersion(gitCmd commands.GitCmd, filerepo FileRepo) (Source, *Semver) {
+func getVersion(gitCmd commands.GitCmd, filerepo FileRepo) (core.Source, *core.Semver) {
 	if gitCmd.IsRepo() {
 		semver, err := getVersionFromGit(gitCmd)
 		if err != nil {
 			fmt.Println("error reading git tags:", err)
-			return SourceNone, &Semver{}
+			return core.SourceNone, &core.Semver{}
 		}
-		return SourceGit, semver
+		return core.SourceGit, semver
 	}
 
-	if filerepo.FileExists(VERSION_FILE) {
+	if filerepo.FileExists(core.VERSION_FILE) {
 		semver, err := getVersionFromFile(filerepo)
 		if err != nil {
 			fmt.Println("error reading version file:", err)
-			return SourceNone, &Semver{}
+			return core.SourceNone, &core.Semver{}
 		}
-		return SourceFile, semver
+		return core.SourceFile, semver
 	}
 
-	return SourceNone, &Semver{}
+	return core.SourceNone, &core.Semver{}
 
 }
 
-func getVersionFromGit(gitCmd commands.GitCmd) (*Semver, error) {
+func getVersionFromGit(gitCmd commands.GitCmd) (*core.Semver, error) {
 	latestTag, err := gitCmd.LatestTag()
 	if err != nil {
 		return nil, err
 	}
 
-	return ParseSemver(latestTag)
+	return core.ParseSemver(latestTag)
 }
 
-func getVersionFromFile(filerepo FileRepo) (*Semver, error) {
-	content, err := filerepo.ReadFileContent(VERSION_FILE)
+func getVersionFromFile(filerepo FileRepo) (*core.Semver, error) {
+	content, err := filerepo.ReadFileContent(core.VERSION_FILE)
 	if err != nil {
 		return nil, err
 	}
 
-	return ParseSemver(string(content))
+	return core.ParseSemver(string(content))
 }
