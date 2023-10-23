@@ -18,7 +18,7 @@ var untagCmd = &cobra.Command{
 	Short: "Delete a specific tag from git (default: current tag)",
 	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		ctx := verman.BuildContext(args, false)
+		ctx := verman.BuildContext(false)
 
 		if ctx.SemverSource != core.SourceGit {
 			fmt.Println("not a git repository.")

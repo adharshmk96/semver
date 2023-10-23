@@ -15,7 +15,7 @@ var pushCmd = &cobra.Command{
 	Use:   "push",
 	Short: "Git push the current version of the project",
 	Run: func(cmd *cobra.Command, args []string) {
-		ctx := verman.BuildContext(args, false)
+		ctx := verman.BuildContext(false)
 
 		if ctx.SemverSource == core.SourceNone {
 			fmt.Println("semver config not found. run `semver init` to initialize the semver configuration.")

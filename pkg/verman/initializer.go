@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/afero"
 )
 
-func BuildContext(args []string, dry bool) *core.Context {
+func BuildContext(dry bool) *core.Context {
 	gitCmd := commands.NewGitCmd(commands.NewGitExec())
 	fs := afero.NewOsFs()
 	fileRepo := NewFileRepo(fs)

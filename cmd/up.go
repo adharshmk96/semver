@@ -22,7 +22,7 @@ func createReleaseCommand(versionType string) *cobra.Command {
 			beta, _ := cmd.Flags().GetBool("beta")
 			rc, _ := cmd.Flags().GetBool("rc")
 
-			ctx := verman.BuildContext(args, dry)
+			ctx := verman.BuildContext(dry)
 			if ctx.SemverSource == core.SourceNone {
 				fmt.Println("semver config not found. run `semver init` to initialize the semver configuration.")
 				return
@@ -50,7 +50,7 @@ func createPreReleaseCommand(versionType string) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			dry, _ := cmd.Flags().GetBool("dry")
 
-			ctx := verman.BuildContext(args, dry)
+			ctx := verman.BuildContext(dry)
 			if ctx.SemverSource == core.SourceNone {
 				fmt.Println("semver config not found. run `semver init` to initialize the semver configuration.")
 				return

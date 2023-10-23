@@ -22,7 +22,7 @@ It will get latest tag from git and set it as the current version, if the git ta
 If no git tags are found, it will set the version to 0.0.1`,
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		ctx := verman.BuildContext(args, false)
+		ctx := verman.BuildContext(false)
 
 		if ctx.SemverSource != core.SourceNone {
 			fmt.Println("semver config found, run `semver get` to view the version.")

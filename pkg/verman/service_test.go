@@ -16,7 +16,7 @@ func TestInitializeSemver(t *testing.T) {
 		testDir := testutils.SetupTempDir(t)
 		defer testDir()
 
-		ctx := verman.BuildContext([]string{}, false)
+		ctx := verman.BuildContext(false)
 
 		err := verman.InitializeSemver(ctx, "v0.0.1")
 		assert.NoError(t, err)
@@ -36,7 +36,7 @@ func TestInitializeSemver(t *testing.T) {
 		exec.Command("git", "add", ".").Run()
 		exec.Command("git", "commit", "-m", "initial commit").Run()
 
-		ctx := verman.BuildContext([]string{}, false)
+		ctx := verman.BuildContext(false)
 
 		err := verman.InitializeSemver(ctx, "v0.0.1")
 		assert.NoError(t, err)

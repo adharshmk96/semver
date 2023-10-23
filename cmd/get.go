@@ -17,7 +17,7 @@ var getCmd = &cobra.Command{
 	Short: "Display the current version of the project",
 	Long:  `Reads the .version.yaml file and displays the current version of the project.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		ctx := verman.BuildContext(args, false)
+		ctx := verman.BuildContext(false)
 
 		if ctx.SemverSource == core.SourceNone {
 			fmt.Println("semver config not found. run `semver init` to initialize the semver configuration.")

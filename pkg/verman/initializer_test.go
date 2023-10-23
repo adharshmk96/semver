@@ -25,8 +25,7 @@ func TestBuildContext(t *testing.T) {
 		cleanUp := testutils.SetupTempDir(t)
 		defer cleanUp()
 
-		args := []string{}
-		ctx := verman.BuildContext(args, false)
+		ctx := verman.BuildContext(false)
 
 		assert.Equal(t, core.SourceNone, ctx.SemverSource)
 		assert.Empty(t, ctx.CurrentVersion)
@@ -38,39 +37,19 @@ func TestBuildContext(t *testing.T) {
 
 		exec.Command("git", "init").Run() //nolint:gosec // This is a test and we need to run git commands.
 
-		args := []string{}
-		ctx := verman.BuildContext(args, false)
+		ctx := verman.BuildContext(false)
 
 		assert.Equal(t, core.SourceNone, ctx.SemverSource)
 		assert.Empty(t, ctx.CurrentVersion)
 	})
 
-	t.Run("valid tagged git repo.", func(t *testing.T) {
-		cleanUp := testutils.SetupTempDir(t)
-		defer cleanUp()
-
-		repoWithTag(t, "v1.0.0")
-
-		args := []string{}
-		ctx := verman.BuildContext(args, false)
-
-		assert.Equal(t, core.SourceGit, ctx.SemverSource)
-		assert.Equal(t, 1, ctx.CurrentVersion.Major)
-		assert.Equal(t, 0, ctx.CurrentVersion.Minor)
-		assert.Equal(t, 0, ctx.CurrentVersion.Patch)
-		assert.Equal(t, 0, ctx.CurrentVersion.Alpha)
-		assert.Equal(t, 0, ctx.CurrentVersion.Beta)
-		assert.Equal(t, 0, ctx.CurrentVersion.RC)
-	})
-
 	t.Run("invalid tagged git repo.", func(t *testing.T) {
 		cleanUp := testutils.SetupTempDir(t)
 		defer cleanUp()
-		exec.Command("git", "init").Run() //nolint:gosec // This is a test and we need to run git commands.
-		exec.Command("git", "tag", "v1.0.0").Run()
 
-		args := []string{}
-		ctx := verman.BuildContext(args, false)
+		repoWithTag(t, "invalid")
+
+		ctx := verman.BuildContext(false)
 
 		assert.Equal(t, core.SourceNone, ctx.SemverSource)
 		assert.Equal(t, 0, ctx.CurrentVersion.Major)
@@ -88,8 +67,7 @@ func TestBuildContext(t *testing.T) {
 		err := os.WriteFile(".version", []byte("v1.0.0-rc.1"), 0644)
 		assert.NoError(t, err)
 
-		args := []string{}
-		ctx := verman.BuildContext(args, false)
+		ctx := verman.BuildContext(false)
 
 		ctxVersion := ctx.CurrentVersion
 
@@ -111,8 +89,7 @@ func TestBuildContext(t *testing.T) {
 		err := os.WriteFile(".version", []byte("invalid"), 0644)
 		assert.NoError(t, err)
 
-		args := []string{}
-		ctx := verman.BuildContext(args, false)
+		ctx := verman.BuildContext(false)
 
 		assert.Equal(t, core.SourceNone, ctx.SemverSource)
 		assert.Empty(t, ctx.CurrentVersion)
@@ -127,14 +104,30 @@ func TestBuildContext(t *testing.T) {
 		err := os.WriteFile(".version", []byte("v1.0.0-rc.1"), 0644)
 		assert.NoError(t, err)
 
-		args := []string{}
-		ctx := verman.BuildContext(args, false)
+		ctx := verman.BuildContext(false)
 
 		ctxVersion := ctx.CurrentVersion
 
 		assert.Empty(t, ctxVersion)
 
 		assert.Equal(t, core.SourceNone, ctx.SemverSource)
+	})
+
+	t.Run("valid tagged git repo.", func(t *testing.T) {
+		cleanUp := testutils.SetupTempDir(t)
+		defer cleanUp()
+
+		repoWithTag(t, "v1.0.0")
+
+		ctx := verman.BuildContext(false)
+
+		assert.Equal(t, core.SourceGit, ctx.SemverSource)
+		assert.Equal(t, 1, ctx.CurrentVersion.Major)
+		assert.Equal(t, 0, ctx.CurrentVersion.Minor)
+		assert.Equal(t, 0, ctx.CurrentVersion.Patch)
+		assert.Equal(t, 0, ctx.CurrentVersion.Alpha)
+		assert.Equal(t, 0, ctx.CurrentVersion.Beta)
+		assert.Equal(t, 0, ctx.CurrentVersion.RC)
 	})
 
 	t.Run("valid git tag and invalid .version file", func(t *testing.T) {
@@ -146,8 +139,7 @@ func TestBuildContext(t *testing.T) {
 		err := os.WriteFile(".version", []byte("invalid"), 0644)
 		assert.NoError(t, err)
 
-		args := []string{}
-		ctx := verman.BuildContext(args, false)
+		ctx := verman.BuildContext(false)
 
 		ctxVersion := ctx.CurrentVersion
 
@@ -170,8 +162,7 @@ func TestBuildContext(t *testing.T) {
 		err := os.WriteFile(".version", []byte("v1.0.0-rc.1"), 0644)
 		assert.NoError(t, err)
 
-		args := []string{}
-		ctx := verman.BuildContext(args, false)
+		ctx := verman.BuildContext(false)
 
 		ctxVersion := ctx.CurrentVersion
 

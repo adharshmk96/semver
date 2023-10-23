@@ -17,7 +17,7 @@ var releaseCmd = &cobra.Command{
 	Short: "removes the pre-release and tags the release version",
 	Run: func(cmd *cobra.Command, args []string) {
 		dry, _ := cmd.Flags().GetBool("dry")
-		ctx := verman.BuildContext(args, dry)
+		ctx := verman.BuildContext(dry)
 
 		if ctx.SemverSource == core.SourceNone {
 			fmt.Println("semver config not found. run `semver init` to initialize the semver configuration.")
