@@ -11,7 +11,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func repoWithTag(tag string) {
+func repoWithTag(t *testing.T, tag string) {
+	t.Helper()
 	exec.Command("git", "init").Run() //nolint:gosec // This is a test and we need to run git commands.
 	os.WriteFile("test.txt", []byte("test"), 0644)
 	exec.Command("git", "add", ".").Run()
@@ -48,7 +49,7 @@ func TestBuildContext(t *testing.T) {
 		cleanUp := testutils.SetupTempDir(t)
 		defer cleanUp()
 
-		repoWithTag("v1.0.0")
+		repoWithTag(t, "v1.0.0")
 
 		args := []string{}
 		ctx := verman.BuildContext(args, false)
@@ -121,7 +122,7 @@ func TestBuildContext(t *testing.T) {
 		cleanUp := testutils.SetupTempDir(t)
 		defer cleanUp()
 
-		repoWithTag("invalid")
+		repoWithTag(t, "invalid")
 
 		err := os.WriteFile(".version", []byte("v1.0.0-rc.1"), 0644)
 		assert.NoError(t, err)
@@ -140,7 +141,7 @@ func TestBuildContext(t *testing.T) {
 		cleanUp := testutils.SetupTempDir(t)
 		defer cleanUp()
 
-		repoWithTag("v1.0.0")
+		repoWithTag(t, "v1.0.0")
 
 		err := os.WriteFile(".version", []byte("invalid"), 0644)
 		assert.NoError(t, err)
@@ -164,7 +165,7 @@ func TestBuildContext(t *testing.T) {
 		cleanUp := testutils.SetupTempDir(t)
 		defer cleanUp()
 
-		repoWithTag("v1.0.0")
+		repoWithTag(t, "v1.0.0")
 
 		err := os.WriteFile(".version", []byte("v1.0.0-rc.1"), 0644)
 		assert.NoError(t, err)
