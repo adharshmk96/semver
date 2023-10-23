@@ -78,7 +78,7 @@ func TestParseSemverString(t *testing.T) {
 
 		for _, c := range tc {
 			t.Run(c.name, func(t *testing.T) {
-				actual, err := verman.Parse(c.input)
+				actual, err := verman.ParseSemver(c.input)
 				if err != nil {
 					t.Errorf("Error parsing semver string: %v", err)
 				}
@@ -118,7 +118,7 @@ func TestParseSemverString(t *testing.T) {
 
 		for _, c := range tc {
 			t.Run(c, func(t *testing.T) {
-				_, err := verman.Parse(c)
+				_, err := verman.ParseSemver(c)
 				assert.Error(t, err)
 			})
 		}
@@ -363,6 +363,94 @@ func TestIncrement(t *testing.T) {
 		assert.Equal(t, 0, version.RC)
 		assert.Equal(t, 2, version.Alpha)
 		assert.Equal(t, 0, version.Beta)
+	})
+
+}
+
+func TestIsPreRelease(t *testing.T) {
+	t.Run("Returns true if version is pre-release.", func(t *testing.T) {
+		tc := []verman.Semver{
+			{
+				Alpha: 1,
+			},
+			{
+				Beta: 1,
+			},
+			{
+				RC: 1,
+			},
+		}
+
+		for _, c := range tc {
+			t.Run(c.String(), func(t *testing.T) {
+				assert.True(t, c.IsPreRelease())
+			})
+		}
+	})
+
+	t.Run("Returns false if version is not pre-release.", func(t *testing.T) {
+		tc := []verman.Semver{
+			{},
+			{
+				Major: 1,
+			},
+			{
+				Minor: 1,
+			},
+			{
+				Patch: 1,
+			},
+		}
+
+		for _, c := range tc {
+			t.Run(c.String(), func(t *testing.T) {
+				assert.False(t, c.IsPreRelease())
+			})
+		}
+	})
+
+}
+
+func TestIsRelease(t *testing.T) {
+	t.Run("Returns true if version is release.", func(t *testing.T) {
+		tc := []verman.Semver{
+			{},
+			{
+				Major: 1,
+			},
+			{
+				Minor: 1,
+			},
+			{
+				Patch: 1,
+			},
+		}
+
+		for _, c := range tc {
+			t.Run(c.String(), func(t *testing.T) {
+				assert.True(t, c.IsRelease())
+			})
+		}
+	})
+
+	t.Run("Returns false if version is not release.", func(t *testing.T) {
+		tc := []verman.Semver{
+			{
+				Alpha: 1,
+			},
+			{
+				Beta: 1,
+			},
+			{
+				RC: 1,
+			},
+		}
+
+		for _, c := range tc {
+			t.Run(c.String(), func(t *testing.T) {
+				assert.False(t, c.IsRelease())
+			})
+		}
 	})
 
 }

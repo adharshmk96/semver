@@ -21,7 +21,7 @@ const (
 	RC    = "rc"
 )
 
-func Parse(version string) (*Semver, error) {
+func ParseSemver(version string) (*Semver, error) {
 	semver := &Semver{}
 	var err error
 
@@ -97,17 +97,39 @@ func Parse(version string) (*Semver, error) {
 func (s *Semver) UpdateSemver(versionType string) {
 	switch versionType {
 	case "major":
-		s.IncrementMajor()
+		s.Major++
+		s.Minor = 0
+		s.Patch = 0
+		s.Alpha = 0
+		s.Beta = 0
+		s.RC = 0
 	case "minor":
-		s.IncrementMinor()
+		s.Minor++
+		s.Patch = 0
+		s.Alpha = 0
+		s.Beta = 0
+		s.RC = 0
 	case "patch":
-		s.IncrementPatch()
+		s.Patch++
+		s.Alpha = 0
+		s.Beta = 0
+		s.RC = 0
 	case "alpha":
-		s.IncrementAlpha()
+		s.Alpha++
+		s.Beta = 0
+		s.RC = 0
 	case "beta":
-		s.IncrementBeta()
+		s.Alpha = 0
+		s.Beta++
+		s.RC = 0
 	case "rc":
-		s.IncrementRC()
+		s.Alpha = 0
+		s.Beta = 0
+		s.RC++
+	case "release":
+		s.Alpha = 0
+		s.Beta = 0
+		s.RC = 0
 	}
 }
 

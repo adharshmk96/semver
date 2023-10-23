@@ -46,7 +46,7 @@ func GetVersionFromGitTag() (*Semver, error) {
 		return nil, ErrGettingGitTag
 	}
 	versionString := strings.TrimSpace(string(output))
-	version, err := Parse(versionString)
+	version, err := ParseSemver(versionString)
 	if err != nil {
 		return nil, err
 	}

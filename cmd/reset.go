@@ -26,7 +26,7 @@ func resetVersionFromArgs(args []string) {
 	}
 	version := args[0]
 
-	projectVersion, err := verman.Parse(version)
+	projectVersion, err := verman.ParseSemver(version)
 	if err != nil {
 		fmt.Println("error parsing version.")
 		return

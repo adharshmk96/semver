@@ -94,7 +94,7 @@ func getVersionFromArg(args []string) (*verman.Semver, error) {
 	if len(args) == 0 {
 		return nil, fmt.Errorf("version not provided")
 	}
-	version, err := verman.Parse(args[0])
+	version, err := verman.ParseSemver(args[0])
 	if err != nil {
 		return nil, fmt.Errorf("invalid version: %w", err)
 	}
