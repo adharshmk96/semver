@@ -31,6 +31,10 @@ func WriteVersionToConfig(version *Semver) error {
 	return viper.WriteConfigAs(".version.yaml")
 }
 
+func IsPreRelease(version *Semver) bool {
+	return version.Alpha > 0 || version.Beta > 0 || version.RC > 0
+}
+
 func RemoveConfig() error {
 	return os.RemoveAll(".version.yaml")
 }

@@ -153,3 +153,13 @@ func GitCommitVersionConfig(version *Semver) error {
 	// Commits all staged.
 	return gitCommit("bump version to " + version.String())
 }
+
+func GitTagExists(tag string) bool {
+	cmd := exec.Command("git", "rev-parse", tag)
+	err := cmd.Run()
+	if err != nil {
+		return false
+	}
+
+	return true
+}

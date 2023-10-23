@@ -166,3 +166,17 @@ func (s *Semver) IncrementRC() {
 	s.Beta = 0
 	s.RC++
 }
+
+func (s *Semver) IsPreRelease() bool {
+	return s.Alpha > 0 || s.Beta > 0 || s.RC > 0
+}
+
+func (s *Semver) IsRelease() bool {
+	return !s.IsPreRelease()
+}
+
+func (s *Semver) Release() {
+	s.Alpha = 0
+	s.Beta = 0
+	s.RC = 0
+}
