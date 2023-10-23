@@ -4,6 +4,7 @@ Copyright © 2023 Adharsh M dev@adharsh.in
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"runtime/debug"
 
@@ -32,7 +33,7 @@ var rootCmd = &cobra.Command{
 semver uses git tags or .version file for non-git projects to manage the version of the project.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if cmd.Flag("version").Value.String() == "true" {
-			GetSemverInfo()
+			fmt.Println(GetSemverInfo())
 		} else {
 			cmd.Help()
 		}
