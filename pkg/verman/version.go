@@ -1,6 +1,7 @@
 package verman
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/spf13/viper"
@@ -46,4 +47,17 @@ func writeToFile(filePath string, fileContent string) error {
 	}
 
 	return nil
+}
+
+// New stuff
+
+func DisplaySource(ct *Context) {
+	switch ct.SemverSource {
+	case SourceNone:
+		fmt.Println("no version source found.")
+	case SourceGit:
+		fmt.Println("version source: git tag.")
+	case SourceFile:
+		fmt.Println("version source: .version file.")
+	}
 }

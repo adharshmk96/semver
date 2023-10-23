@@ -14,23 +14,20 @@ var pushCmd = &cobra.Command{
 	Use:   "push",
 	Short: "Git push the current version of the project",
 	Run: func(cmd *cobra.Command, args []string) {
-		version, err := verman.GetVersionFromConfig()
-		if err != nil {
-			fmt.Println("error reading configuration file.")
+		ctx := verman.BuildContext(args, false)
+
+		if ctx.SemverSource == verman.SourceNone {
+			fmt.Println("semver config not found. run `semver init` to initialize the semver configuration.")
 			return
 		}
 
-		if !verman.IsGitRepository() {
+		if !ctx.IsGitRepo {
 			fmt.Println("not a git repository.")
 			return
 		}
 
-		fmt.Println("pushing git tag:", version.String())
-		err = verman.GitPushTag(version)
-		if err != nil {
-			fmt.Println("error pushing git tag.")
-			return
-		}
+		fmt.Println("pushing git tag:", ctx.CurrentVersion.String())
+
 	},
 }
 

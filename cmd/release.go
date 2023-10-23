@@ -15,35 +15,25 @@ var releaseCmd = &cobra.Command{
 	Use:   "release",
 	Short: "removes the pre-release and tags the release version",
 	Run: func(cmd *cobra.Command, args []string) {
+		ctx := verman.BuildContext(args, false)
 
-		semver, err := verman.GetVersionFromConfig()
-		if err != nil {
-			fmt.Println("error reading configuration file.")
+		if ctx.SemverSource == verman.SourceNone {
+			fmt.Println("semver config not found. run `semver init` to initialize the semver configuration.")
 			return
 		}
 
-		isPreRelease := verman.IsPreRelease(semver)
-		if !isPreRelease {
-			fmt.Println("not a pre-release.")
+		if ctx.CurrentVersion.IsPreRelease() {
+			fmt.Println("current version is not a pre-release.")
 			return
 		}
 
-		semver.Release()
+		fmt.Println("current version:", ctx.CurrentVersion.String())
 
-		if verman.GitTagExists(semver.String()) {
-			fmt.Println("tag already exists. please run `semver up` to increment the version.")
-			return
-		}
+		ctx.CurrentVersion.Release()
 
-		err = verman.WriteVersionToConfig(semver)
-		if err != nil {
-			fmt.Println("error writing to configuration file.")
-			return
-		}
+		verman.CommitVersionLocally(ctx)
 
-		commitUpdatedVersion(semver)
-
-		fmt.Println(semver.String())
+		fmt.Println("updated version:", ctx.CurrentVersion.String())
 	},
 }
 

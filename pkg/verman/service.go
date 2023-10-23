@@ -5,14 +5,24 @@ import "github.com/adharshmk96/semver/pkg/commands"
 func InitializeSemver(ctx *Context) error {
 	gitCmd := commands.NewGitCmd(commands.NewGitExec())
 	if gitCmd.IsRepo() {
-		latestTag := ctx.CurrentVersion.String()
-		return gitCmd.TagVersion(latestTag)
+		return gitCmd.TagVersion(ctx.CurrentVersion.String())
 	}
 
-	return WriteVersionToFile(ctx.CurrentVersion)
+	fileContent := ctx.CurrentVersion.String()
+	return writeToFile(VERSION_FILE, fileContent)
 }
 
-func WriteVersionToFile(semver *Semver) error {
-	fileContent := semver.String()
+func PushGitTag(ctx *Context) error {
+	gitCmd := commands.NewGitCmd(commands.NewGitExec())
+	return gitCmd.PushTag(ctx.CurrentVersion.String())
+}
+
+func CommitVersionLocally(ctx *Context) error {
+	gitCmd := commands.NewGitCmd(commands.NewGitExec())
+	if gitCmd.IsRepo() {
+		return gitCmd.TagVersion(ctx.CurrentVersion.String())
+	}
+
+	fileContent := ctx.CurrentVersion.String()
 	return writeToFile(VERSION_FILE, fileContent)
 }
