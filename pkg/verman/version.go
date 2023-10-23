@@ -40,13 +40,7 @@ func RemoveConfig() error {
 }
 
 func writeToFile(filePath string, fileContent string) error {
-	f, err := os.Create(filePath)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	_, err = f.WriteString(fileContent)
+	err := os.WriteFile(filePath, []byte(fileContent), 0644)
 	if err != nil {
 		return err
 	}

@@ -1,6 +1,7 @@
 package verman
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -13,45 +14,69 @@ func BuildContext(args []string, dry bool) *Context {
 	fs := afero.NewOsFs()
 	fileRepo := NewFileRepo(fs)
 
-	// Determine the working directory
 	workDir := determineWorkDir(gitCmd)
+	os.Chdir(workDir)
 
-	// Check if current directory has a .version file and parse it
-	semver, isVerman := fetchSemverIfPresent(fileRepo)
+	source, currentVersion := getVersion(gitCmd, fileRepo)
 
 	return &Context{
 		WorkDir:        workDir,
-		CurrentVersion: semver,
+		CurrentVersion: currentVersion,
 		DryRun:         dry,
-		IsGitRepo:      gitCmd.IsRepo(),
-		IsVerman:       isVerman,
+		SemverSource:   source,
 	}
 }
 
 func determineWorkDir(gitCmd commands.GitCmd) string {
-	if gitCmd.IsRepo() {
-		workDir, err := gitCmd.GetTopLevel()
-		if err != nil {
-			return "."
-		}
-		return workDir
+	if !gitCmd.IsRepo() {
+		return "."
 	}
-	return "."
+
+	workDir, err := gitCmd.GetTopLevel()
+	if err != nil {
+		log.Println("Failed to get git top level directory:", err)
+		return "."
+	}
+	return workDir
 }
 
-func fetchSemverIfPresent(fileRepo FileRepo) (*Semver, bool) {
-	if fileRepo.FileExists(".version") {
-		fileContent, err := fileRepo.ReadFileContent(".version")
+func getVersion(gitCmd commands.GitCmd, filerepo FileRepo) (Source, *Semver) {
+	if gitCmd.IsRepo() {
+		semver, err := getVersionFromGit(gitCmd)
 		if err != nil {
-			return nil, false
+			fmt.Println("error reading git tags:", err)
+			return SourceNone, &Semver{}
 		}
-
-		semver, err := ParseSemver(fileContent)
-		if err != nil {
-			log.Fatalln("error parsing version file:", err)
-			os.Exit(1)
-		}
-		return semver, true
+		return SourceGit, semver
 	}
-	return nil, false
+
+	if filerepo.FileExists(VERSION_FILE) {
+		semver, err := getVersionFromFile(filerepo)
+		if err != nil {
+			fmt.Println("error reading version file:", err)
+			return SourceNone, &Semver{}
+		}
+		return SourceFile, semver
+	}
+
+	return SourceNone, &Semver{}
+
+}
+
+func getVersionFromGit(gitCmd commands.GitCmd) (*Semver, error) {
+	latestTag, err := gitCmd.LatestTag()
+	if err != nil {
+		return nil, err
+	}
+
+	return ParseSemver(latestTag)
+}
+
+func getVersionFromFile(filerepo FileRepo) (*Semver, error) {
+	content, err := filerepo.ReadFileContent(VERSION_FILE)
+	if err != nil {
+		return nil, err
+	}
+
+	return ParseSemver(string(content))
 }

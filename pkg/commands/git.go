@@ -15,6 +15,7 @@ type CmdExecutor interface {
 }
 
 type GitCmd interface {
+	Run(args ...string) (string, error)
 	IsRepo() bool
 	GetTopLevel() (string, error)
 	Revparse(ref string) (string, error)
@@ -33,7 +34,7 @@ type gitCommands struct {
 	exec CmdExecutor
 }
 
-func NewGitCmd(e CmdExecutor) *gitCommands {
+func NewGitCmd(e CmdExecutor) GitCmd {
 	return &gitCommands{exec: e}
 }
 

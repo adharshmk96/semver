@@ -36,25 +36,21 @@ func ParseSemver(version string) (*Semver, error) {
 
 	// Parse major, minor, and patch versions.
 	if len(verParts) != 3 {
-		fmt.Printf("error parsing version: %s\n", version)
 		return nil, ErrInvalidVersionFormat
 	}
 
 	semver.Major, err = strconv.Atoi(verParts[0])
 	if err != nil {
-		fmt.Printf("error parsing major version: %s\n", err)
 		return nil, ErrInvalidVersionFormat
 	}
 
 	semver.Minor, err = strconv.Atoi(verParts[1])
 	if err != nil {
-		fmt.Printf("error parsing minor version: %s\n", err)
 		return nil, ErrInvalidVersionFormat
 	}
 
 	semver.Patch, err = strconv.Atoi(verParts[2])
 	if err != nil {
-		fmt.Printf("error parsing patch version: %s\n", err)
 		return nil, ErrInvalidVersionFormat
 	}
 
