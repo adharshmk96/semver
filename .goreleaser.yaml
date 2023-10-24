@@ -24,8 +24,8 @@ archives:
   - format: binary
     # this name template makes the OS and Arch compatible with the results of `uname`.
     name_template: >-
-      {{ .ProjectName }}_
-      {{- title .Os }}_
+      {{ .ProjectName | lower }}_
+      {{- .Os | lower }}_
       {{ .Version }}_
       {{- if eq .Arch "amd64" }}x86_64
       {{- else if eq .Arch "386" }}i386

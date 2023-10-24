@@ -56,6 +56,12 @@ func createPreReleaseCommand(versionType string) *cobra.Command {
 				return
 			}
 
+			if ctx.CurrentVersion.IsRelease() {
+				fmt.Println("current veresion is not a pre-release. run `semver ( major | minor | patch ) --( alpha | beta | rc )` to create a pre-release.")
+				fmt.Println("hint: you can't go back to pre-release from existing release version. not allowed to perform a pre-release action on a release version.")
+				return
+			}
+
 			verman.UpdateAndCommitVersion(ctx, versionType)
 
 			fmt.Println(ctx.CurrentVersion.String())

@@ -1,12 +1,24 @@
 # `semver` - Semantic Version Management CLI Tool
 
-`semver` is a command-line interface tool designed to simplify and streamline the management of your project's semantic versioning. It uses a `.version.yaml` file to store the project's current version and also uses git tags for version management. When updating the version, `semver` will also tag the git repository with the new version.
+semver offers a streamlined command-line experience to implement semantic versioning for your projects seamlessly. Whether you utilize git tags or prefer a .version file for non-git projects, semver has got you covered.
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/adharshmk96/semver)](https://goreportcard.com/report/github.com/adharshmk96/semver)
 [![Build and Test](https://github.com/adharshmk96/semver/actions/workflows/go-build-test.yml/badge.svg)](https://github.com/adharshmk96/semver/actions/workflows/go-build-test.yml)
 [![Release](https://github.com/adharshmk96/semver/actions/workflows/go-release.yml/badge.svg)](https://github.com/adharshmk96/semver/actions/workflows/go-release.yml)
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/adharshmk96/semver)
+![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/adharshmk96/semver)
 
+## Key Features
+
+- Standard version format: MAJOR.MINOR.PATCH (e.g., 1.0.0)
+- Supports pre-release versions with MAJOR.MINOR.PATCH-PRERELEASE format (e.g., 1.0.0-alpha.1)
 
 ## 🛠 Installation
+
+Download Binary from [releases page](https://github.com/adharshmk96/semver/releases) and move it to `/usr/local/bin` or any `PATH` directory.
+
+
+or
 
 With Golang
 
@@ -16,28 +28,105 @@ go install github.com/adharshmk96/semver@latest
 
 If you're facing with issues, Ensure go is setup and check GOPATH is in PATH configurations.
 
+## 🚀 Getting Started
+
+### `semver init <version>`
+
+For new projects, run `semver init` to initialize the project. Optionally specify the initial version number.
+
+```bash
+semver init
+```
+
 or
 
-Download Binary from [releases page](https://github.com/adharshmk96/semver/releases) and move it to `/usr/local/bin`
-
-## 🚀 Usage
-
-```
-semver [command] [arguments]
+```bash
+semver init v1.0.0
 ```
 
-## 📝 Commands
+> NOTE: You don't need to initialize if you're managing semver already with git tags.
 
-| Command             | Description                                                                                                                                                               |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `get`               | Retrieve and display the current version of the project.                                                                                                                  |
-| `help`              | Provides detailed information and guidance on any specified command.                                                                                                      |
-| `init`              | Kickstarts `semver` by initializing the necessary configuration. This includes the creation of the `.version.yaml` file. ( optionally add version )                       |
-| `push`              | Pushes the current version of the project to the git repository. This helps in keeping the repository synchronized with version changes.                                  |
-| `reset`             | ⚠️ (Use with caution) Wipes out all existing git tags and deletes the semver configuration. When used with `-r` or `--remote`, this also affects the remote repository.    |
-| `untag`             | Removes a specified git tag. If no tag is specified, the current tag is deleted by default. Using `-r` or `--remote` will also delete the tag from the remote repository. |
-| `up <version-type>` | Elevates the semver version by a single increment, adhering to semantic versioning standards. `version-type: <major/minor/patch/alpha/beta/rc>`                           |
-| `version`           | Displays the running version of the `semver` CLI tool itself.                                                                                                             |
+
+### `semver get`
+
+To get the current version of the project, run `semver get`.
+
+```bash
+semver get
+```
+
+## 📖 Managing Versions
+
+### Release Versions
+
+`semver major | minor | patch `
+
+Increments the corresponding release version number by 1. 
+
+example: 
+
+```bash
+semver major    # v1.0.0 -> v2.0.0
+semver minor    # v1.0.0 -> v1.1.0
+semver patch    # v1.0.0 -> v1.0.1
+```
+
+To attach a pre-release version, add `--[ alpha | beta | rc ]` flag.
+
+example: 
+
+```bash
+semver major --alpha    # v1.0.0 -> v2.0.0-alpha.1
+semver major --beta     # v1.0.0 -> v2.0.0-beta.1
+semver major --rc       # v1.0.0 -> v2.0.0-rc.1
+```
+
+### Pre-Release Versions
+
+`semver alpha | beta | rc`
+
+Increments the corresponding pre-release version number by 1.
+
+example: 
+
+```bash
+semver alpha # v1.0.0-alpha.1 -> v1.0.0-alpha.2
+semver beta  # v1.0.0-beta.1 -> v1.0.0-beta.2
+semver rc    # v1.0.0-rc.1 -> v1.0.0-rc.2
+```
+
+> Note: You can't run pre-release update to current release version. (ie) `semver alpha` will fail if the current version is `v1.0.0`. You have to create pre-release like for example: `semver major --alpha`.
+
+### Remove Pre-Release
+
+`semver release`
+
+Removes the pre-release tag from the current version.
+
+example: 
+
+```bash
+semver release # v1.0.0-alpha.2 -> v1.0.0
+```
+
+## 📝 Other Commands
+
+### `semver untag <tag>`
+
+Removes the specified tag from the git repository.
+
+```bash
+semver untag v1.0.0
+```
+
+### `semver reset`
+
+Resets the version to specified version or `v0.0.1` ( default ).
+
+```bash
+semver reset v1.0.0 # v1.2.3 -> v1.0.0
+semver reset        # v1.2.3 -> v0.0.1
+```
 
 Note: Always ensure you understand the implications of each command, especially ones like `reset`. Misuse can lead to data loss.
 
@@ -47,4 +136,4 @@ Note: Always ensure you understand the implications of each command, especially 
 
 ## Support and Feedback
 
-For support, questions, or feedback, please contact me at [dev@adharsh.in](mailto:dev@adharsh.in).
+For support, questions, or feedback, please contact me at [debugslayer@gmail.com](mailto:debugslayer@gmail.com).

@@ -30,7 +30,7 @@ var rootCmd = &cobra.Command{
 	Short: "Manage your project's semver configuration",
 	Long: `A CLI tool to manage your project's semantic version.
 
-semver uses git tags or .version file for non-git projects to manage the version of the project.`,
+semver uses git tags or .version file (for non-git projects) to manage the version of the project.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if cmd.Flag("version").Value.String() == "true" {
 			fmt.Println(GetSemverInfo())
