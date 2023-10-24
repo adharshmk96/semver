@@ -13,11 +13,16 @@ import (
 
 func repoWithTag(t *testing.T, tag string) {
 	t.Helper()
-	exec.Command("git", "init").Run() //nolint:gosec // This is a test and we need to run git commands.
-	os.WriteFile("test.txt", []byte("test"), 0644)
-	exec.Command("git", "add", ".").Run()
-	exec.Command("git", "commit", "-m", "initial commit").Run()
-	exec.Command("git", "tag", tag).Run()
+	err := exec.Command("git", "init").Run() //nolint:gosec // This is a test and we need to run git commands.
+	assert.NoError(t, err)
+	err = os.WriteFile("test.txt", []byte("test"), 0644)
+	assert.NoError(t, err)
+	err = exec.Command("git", "add", ".").Run()
+	assert.NoError(t, err)
+	err = exec.Command("git", "commit", "-m", "initial commit").Run()
+	assert.NoError(t, err)
+	err = exec.Command("git", "tag", tag).Run()
+	assert.NoError(t, err)
 }
 
 func TestBuildContext(t *testing.T) {
