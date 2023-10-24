@@ -1,139 +1,114 @@
-# `semver` - Semantic Version Management CLI Tool
+# `semver` - Semantic Version Management CLI
 
-semver offers a streamlined command-line experience to implement semantic versioning for your projects seamlessly. Whether you utilize git tags or prefer a .version file for non-git projects, semver has got you covered.
+`semver` offers a streamlined command-line experience to implement semantic versioning for your projects seamlessly. Whether you utilize git tags or prefer a `.version` file for non-git projects, `semver` has got you covered.
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/adharshmk96/semver)](https://goreportcard.com/report/github.com/adharshmk96/semver)
+![Go Report Card](https://goreportcard.com/badge/github.com/adharshmk96/semver)
 [![Build and Test](https://github.com/adharshmk96/semver/actions/workflows/go-build-test.yml/badge.svg)](https://github.com/adharshmk96/semver/actions/workflows/go-build-test.yml)
-[![Release](https://github.com/adharshmk96/semver/actions/workflows/go-release.yml/badge.svg)](https://github.com/adharshmk96/semver/actions/workflows/go-release.yml)
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/adharshmk96/semver)
 ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/adharshmk96/semver)
 
 ## Key Features
-
-- Standard version format: MAJOR.MINOR.PATCH (e.g., 1.0.0)
-- Supports pre-release versions with MAJOR.MINOR.PATCH-PRERELEASE format (e.g., 1.0.0-alpha.1)
+- Standard version format: `MAJOR.MINOR.PATCH` (e.g., `1.0.0`)
+- Supports pre-release versions with `MAJOR.MINOR.PATCH-PRERELEASE` format (e.g., `1.0.0-alpha.1`)
 
 ## 🛠 Installation
 
-Download Binary from [releases page](https://github.com/adharshmk96/semver/releases) and move it to `/usr/local/bin` or any `PATH` directory.
+### Direct Binary Download
+1. Download the binary from the [releases page](https://github.com/adharshmk96/semver/releases).
+2. Move it to `/usr/local/bin` or any directory in your `PATH`.
 
-
-or
-
-With Golang
-
+### Using Golang 
 ```bash
 go install github.com/adharshmk96/semver@latest
 ```
-
-If you're facing with issues, Ensure go is setup and check GOPATH is in PATH configurations.
+**Note**: Ensure Golang is properly set up and that `GOPATH` is configured in your PATH.
 
 ## 🚀 Getting Started
 
-### `semver init <version>`
-
-For new projects, run `semver init` to initialize the project. Optionally specify the initial version number.
-
+### Initialize Your Project
+Start a new project with the following, optionally specifying the version:
 ```bash
-semver init
+semver init        # Default initialization
+semver init v1.0.0 # With v1.0.0 version
 ```
+**Note**: Initialization is unnecessary if you're already using git tags for versioning.
 
-or
-
-```bash
-semver init v1.0.0
-```
-
-> NOTE: You don't need to initialize if you're managing semver already with git tags.
-
-
-### `semver get`
-
-To get the current version of the project, run `semver get`.
-
+### Retrieve Current Version
 ```bash
 semver get
 ```
 
-## 📖 Managing Versions
+## 📖 Version Management
 
-### Release Versions
-
-`semver major | minor | patch `
-
-Increments the corresponding release version number by 1. 
-
-example: 
-
+### Standard Release Versions
+Easily increment version numbers:
 ```bash
 semver major    # v1.0.0 -> v2.0.0
 semver minor    # v1.0.0 -> v1.1.0
 semver patch    # v1.0.0 -> v1.0.1
 ```
-
-To attach a pre-release version, add `--[ alpha | beta | rc ]` flag.
-
-example: 
-
+For pre-releases, append the desired flag:
 ```bash
-semver major --alpha    # v1.0.0 -> v2.0.0-alpha.1
-semver major --beta     # v1.0.0 -> v2.0.0-beta.1
-semver major --rc       # v1.0.0 -> v2.0.0-rc.1
+semver major --alpha  # v1.0.0 -> v2.0.0-alpha.1
+semver minor --beta   # v1.0.0 -> v1.1.0-beta.1
+semver patch --rc     # v1.0.0 -> v1.0.1-rc.1
 ```
 
 ### Pre-Release Versions
-
-`semver alpha | beta | rc`
-
-Increments the corresponding pre-release version number by 1.
-
-example: 
-
+Manage pre-release versions effortlessly:
 ```bash
-semver alpha # v1.0.0-alpha.1 -> v1.0.0-alpha.2
-semver beta  # v1.0.0-beta.1 -> v1.0.0-beta.2
-semver rc    # v1.0.0-rc.1 -> v1.0.0-rc.2
+semver alpha  # v1.0.0-alpha.1 -> v1.0.0-alpha.2
+semver beta   # v1.0.0-beta.1  -> v1.0.0-beta.2
+semver rc     # v1.0.0-rc.1    -> v1.0.0-rc.2
+```
+**Note**: Direct pre-release updates on a release version will fail. First, create a pre-release as shown above.
+
+### Transition to a Full Release
+Strip pre-release tags:
+```bash
+semver release  # v1.0.0-alpha.2 -> v1.0.0
 ```
 
-> Note: You can't run pre-release update to current release version. (ie) `semver alpha` will fail if the current version is `v1.0.0`. You have to create pre-release like for example: `semver major --alpha`.
+## 📝 Auxiliary Commands
 
-### Remove Pre-Release
+### Removing Git Tags
 
-`semver release`
-
-Removes the pre-release tag from the current version.
-
-example: 
-
+remove latest tag:
 ```bash
-semver release # v1.0.0-alpha.2 -> v1.0.0
+semver untag
 ```
-
-## 📝 Other Commands
-
-### `semver untag <tag>`
-
-Removes the specified tag from the git repository.
-
+remove specific tag:
 ```bash
 semver untag v1.0.0
 ```
 
-### `semver reset`
+add `--remote` flag to remove remote tag as well.
 
-Resets the version to specified version or `v0.0.1` ( default ).
-
+### Pushing Git Tags
 ```bash
-semver reset v1.0.0 # v1.2.3 -> v1.0.0
+semver push
+```
+Pushes latest tag to remote repository. `git push origin <current tag>` is executed under the hood.
+
+### Resetting Versions
+
+Easily revert to a specified version or default to `v0.0.1`:
+
+Local:
+```bash
 semver reset        # v1.2.3 -> v0.0.1
+semver reset v1.0.0 # v1.2.3 -> v1.0.0
+```
+Remote:
+```bash
+semver reset --remote        # v1.2.3 -> v0.0.1
+semver reset v1.0.0 --remote # v1.2.3 -> v1.0.0
 ```
 
-Note: Always ensure you understand the implications of each command, especially ones like `reset`. Misuse can lead to data loss.
+⚠️ **Caution**: Understand the implications of `reset` to avoid unintended data loss.
 
 ## License
+Licensed under the [MIT License](#).
 
-`semver` is licensed under [MIT License](#).
-
-## Support and Feedback
-
-For support, questions, or feedback, please contact me at [debugslayer@gmail.com](mailto:debugslayer@gmail.com).
+## 🤝 Support & Feedback
+For any support, queries, or feedback, feel free to reach out at [debugslayer@gmail.com](mailto:debugslayer@gmail.com).
