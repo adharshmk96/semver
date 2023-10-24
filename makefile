@@ -18,5 +18,5 @@ coverage:
 # Clean git branch
 
 clean-branch:
-	@git branch --merged | egrep -v "(^\*|master|dev)" | xargs git branch -d
+	@git branch --merged | egrep -v "(^\*|master|main|dev)" | xargs git branch -d
 
