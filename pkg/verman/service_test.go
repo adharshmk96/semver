@@ -31,10 +31,12 @@ func TestInitializeSemver(t *testing.T) {
 		defer testDir()
 
 		gitCmd := commands.NewGitCmd(commands.NewGitExec())
-		exec.Command("git", "init").Run() //nolint:gosec // This is a test and we need to run git commands.
-		os.WriteFile("test.txt", []byte("test"), 0644)
-		exec.Command("git", "add", ".").Run()
-		exec.Command("git", "commit", "-m", "initial commit").Run()
+		assert.NoError(t, exec.Command("git", "init").Run())
+		assert.NoError(t, exec.Command("git", "config", "user.email", "user@email.com").Run())
+		assert.NoError(t, exec.Command("git", "config", "user.name", "user").Run())
+		assert.NoError(t, os.WriteFile("test.txt", []byte("test"), 0644))
+		assert.NoError(t, exec.Command("git", "add", ".").Run())
+		assert.NoError(t, exec.Command("git", "commit", "-m", "initial commit").Run())
 
 		ctx := verman.BuildContext(false)
 
