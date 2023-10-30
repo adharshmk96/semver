@@ -17,7 +17,11 @@
 
 Linux:
 ```bash
-curl -sL https://github.com/adharshmk96/semver/releases/download/v0.0.1/semver_0.0.1_linux_amd64.tar.gz | sudo tar xz -C /usr/local/bin semver
+VERSION="1.2.0" && \\
+TMP_FILE="/tmp/semver_$VERSION_linux_amd64.tar.gz" && \\
+curl -sLo $TMP_FILE https://github.com/adharshmk96/semver/releases/download/v$VERSION/semver_$VERSION_linux_amd64.tar.gz && \\
+sudo tar xz -C /usr/local/bin -f $TMP_FILE semver && \\
+rm $TMP_FILE
 ```
 
 1. Download from the [releases page](https://github.com/adharshmk96/semver/releases).
