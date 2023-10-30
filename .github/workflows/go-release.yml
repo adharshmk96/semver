@@ -1,0 +1,33 @@
+name: Go Release Workflow
+
+on:
+  push:
+    # Sequence of patterns matched against refs/tags
+    tags:
+      - "v*.*.*" # Push events to matching v*, i.e. v1.0, v20.15.10
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - run: git fetch --force --tags
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '1.21' # The Go version to download (if necessary) and use.
+     
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v5
+        with:
+          distribution: goreleaser
+          version: latest
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: GO list
+        run: GOPROXY=proxy.golang.org go list -m github.com/adharshmk96/semver@${{ github.ref_name }}
