@@ -17,7 +17,7 @@
 
 Linux:
 ```bash
-curl -sL https://github.com/adharshmk96/semver/releases/download/v1.1.0/semver_1.1.0_linux_amd64.tar.gz | sudo tar xz -C /usr/local/bin semver
+curl -sL https://github.com/adharshmk96/semver/releases/download/v0.0.1/semver_0.0.1_linux_amd64.tar.gz | sudo tar xz -C /usr/local/bin semver
 ```
 
 1. Download from the [releases page](https://github.com/adharshmk96/semver/releases).
@@ -25,7 +25,7 @@ curl -sL https://github.com/adharshmk96/semver/releases/download/v1.1.0/semver_1
 
 ### Using Golang 
 ```bash
-go install github.com/adharshmk96/semver@v1.1.0
+go install github.com/adharshmk96/semver@latest
 ```
 **Note**: Ensure Golang is properly set up and that `GOPATH` is configured in your PATH.
 
