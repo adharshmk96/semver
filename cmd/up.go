@@ -81,6 +81,8 @@ func createPreReleaseCommand(versionType string) *cobra.Command {
 				return
 			}
 
+			ctx.CurrentVersion.UpdateSemver(versionType)
+
 			if ctx.DryRun {
 				fmt.Println(ctx.CurrentVersion.String())
 				return
