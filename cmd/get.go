@@ -15,7 +15,6 @@ import (
 var getCmd = &cobra.Command{
 	Use:   "get",
 	Short: "Display the current version of the project",
-	Long:  `Reads the .version.yaml file and displays the current version of the project.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := verman.BuildContext(false)
 

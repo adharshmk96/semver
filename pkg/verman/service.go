@@ -1,6 +1,8 @@
 package verman
 
 import (
+	"fmt"
+
 	"github.com/adharshmk96/semver/pkg/commands"
 	"github.com/adharshmk96/semver/pkg/verman/core"
 	"github.com/spf13/afero"
@@ -77,5 +79,46 @@ func UntagVersions(versions []string, remote bool) error {
 	}
 
 	return nil
+
+}
+
+func VerifyTagReferences(ctx *core.Context) (string, error) {
+	currentTag := ctx.CurrentVersion.String()
+	// remove v prefix if it exists
+	if currentTag[0] == 'v' {
+		currentTag = currentTag[1:]
+	}
+
+	excludeDir := []string{
+		".git",
+	}
+
+	exclude := []string{
+		"go.mod",
+		"go.sum",
+	}
+
+	excludeDirArg := ""
+
+	for _, dir := range excludeDir {
+		excludeDirArg += " --exclude-dir=" + dir
+	}
+
+	excludeArg := ""
+
+	for _, file := range exclude {
+		excludeArg += " --exclude=" + file
+	}
+
+	// grep -rnH --exclude-dir=.git --exclude=go.mod --exclude=go.sum v0.0.1 .
+	cmd := fmt.Sprintf("grep -rnH %s %s %s .", excludeDirArg, excludeArg, currentTag)
+
+	result, err := RunCmd("sh", "-c", cmd)
+
+	if err != nil {
+		return "", err
+	}
+
+	return result, nil
 
 }
