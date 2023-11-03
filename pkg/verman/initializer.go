@@ -21,10 +21,6 @@ func BuildContext(dry bool) *core.Context {
 	IsGitRepo := gitCmd.IsRepo()
 	source, currentVersion := getVersion(gitCmd, fileRepo)
 
-	if IsGitRepo {
-		gitCmd.Run("fetch", "--tags")
-	}
-
 	return &core.Context{
 		WorkDir:        workDir,
 		CurrentVersion: currentVersion,

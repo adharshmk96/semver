@@ -54,6 +54,7 @@ var resetCmd = &cobra.Command{
 
 func init() {
 	resetCmd.Flags().BoolVarP(&resetRemote, "remote", "r", false, "remove remote tags as well")
+	resetCmd.Flags().BoolVar(&sync, "sync", false, "fetch remote tags before resetting")
 
 	rootCmd.AddCommand(resetCmd)
 }

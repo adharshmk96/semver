@@ -52,5 +52,6 @@ var releaseCmd = &cobra.Command{
 func init() {
 	releaseCmd.Flags().BoolP("dry", "d", false, "dry run mode")
 	releaseCmd.Flags().BoolP("push", "p", false, "push the tag to remote")
+	releaseCmd.Flags().BoolVar(&sync, "sync", false, "fetch remote tags")
 	rootCmd.AddCommand(releaseCmd)
 }

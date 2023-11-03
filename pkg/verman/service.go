@@ -122,3 +122,12 @@ func VerifyTagReferences(ctx *core.Context) (string, error) {
 	return result, nil
 
 }
+
+func FetchTags() error {
+	gitCmd := commands.NewGitCmd(commands.NewGitExec())
+	_, err := gitCmd.Run("fetch", "--tags")
+	if err != nil {
+		return err
+	}
+	return nil
+}

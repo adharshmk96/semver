@@ -50,5 +50,6 @@ var untagCmd = &cobra.Command{
 func init() {
 	untagCmd.Flags().BoolVarP(&untagRemote, "remote", "r", false, "remove remote tag as well")
 	untagCmd.Flags().BoolP("dry", "d", false, "dry run")
+	untagCmd.Flags().BoolVar(&sync, "sync", false, "fetch remote tags")
 	rootCmd.AddCommand(untagCmd)
 }

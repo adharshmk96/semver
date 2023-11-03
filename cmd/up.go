@@ -11,18 +11,26 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var (
+	dry  bool
+	sync bool
+	push bool
+)
+
 func createReleaseCommand(versionType string) *cobra.Command {
 	return &cobra.Command{
 		Use:   versionType,
 		Short: fmt.Sprintf("Increment the %s version by one", versionType),
 		Run: func(cmd *cobra.Command, args []string) {
-			dry, _ := cmd.Flags().GetBool("dry")
 
 			alpha, _ := cmd.Flags().GetBool("alpha")
 			beta, _ := cmd.Flags().GetBool("beta")
 			rc, _ := cmd.Flags().GetBool("rc")
 
-			push, _ := cmd.Flags().GetBool("push")
+			if sync {
+				fmt.Println("Fetching remote...")
+				verman.FetchTags()
+			}
 
 			ctx := verman.BuildContext(dry)
 			if ctx.SemverSource == core.SourceNone {
@@ -65,9 +73,10 @@ func createPreReleaseCommand(versionType string) *cobra.Command {
 		Use:   versionType,
 		Short: fmt.Sprintf("Increment the %s version by one", versionType),
 		Run: func(cmd *cobra.Command, args []string) {
-			dry, _ := cmd.Flags().GetBool("dry")
-
-			push, _ := cmd.Flags().GetBool("push")
+			if sync {
+				fmt.Println("Fetching remote...")
+				verman.FetchTags()
+			}
 
 			ctx := verman.BuildContext(dry)
 			if ctx.SemverSource == core.SourceNone {
@@ -105,17 +114,20 @@ func createPreReleaseCommand(versionType string) *cobra.Command {
 }
 
 func setReleaseCmdFlags(cmd *cobra.Command) {
-	cmd.Flags().BoolP("dry", "d", false, "dry run mode")
+	cmd.Flags().BoolVarP(&dry, "dry", "d", false, "dry run mode")
+	cmd.Flags().BoolVarP(&push, "push", "p", false, "push the git tag")
+	cmd.Flags().BoolVar(&sync, "sync", false, "sync with remote")
+
 	cmd.Flags().Bool("alpha", false, "increment alpha version")
 	cmd.Flags().Bool("beta", false, "increment beta version")
 	cmd.Flags().Bool("rc", false, "increment rc version")
 
-	cmd.Flags().BoolP("push", "p", false, "push the git tag")
 }
 
 func setPreReleaseCmdFlags(cmd *cobra.Command) {
-	cmd.Flags().BoolP("dry", "d", false, "dry run mode")
-	cmd.Flags().BoolP("push", "p", false, "push the git tag")
+	cmd.Flags().BoolVarP(&dry, "dry", "d", false, "dry run mode")
+	cmd.Flags().BoolVarP(&push, "push", "p", false, "push the git tag")
+	cmd.Flags().BoolVar(&sync, "sync", false, "sync with remote")
 }
 
 func init() {
