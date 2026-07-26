@@ -28,18 +28,25 @@ var rootCmd = &cobra.Command{
 	Short: "Manage your project's semver configuration",
 	Long: `A CLI tool to manage your project's semantic version.
 
-semver uses git tags or .version file (for non-git projects) to manage the version of the project.`,
+semver uses git tags or .version file (for non-git projects) to manage the version of the project.
+
+Running 'semver' with no arguments starts the local web UI (same as 'semver ui').
+Use 'semver --help' to list the available commands.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		if cmd.Flag("version").Value.String() != "true" {
+		if cmd.Flag("version").Value.String() == "true" {
+			if SemVer == "development" {
+				if info, ok := debug.ReadBuildInfo(); ok && info.Main.Version != "" && info.Main.Version != "(devel)" {
+					SemVer = info.Main.Version
+				}
+			}
+			fmt.Println(SemVer)
+			return
+		}
+		if help, _ := cmd.Flags().GetBool("help"); help {
 			cmd.Help()
 			return
 		}
-		if SemVer == "development" {
-			if info, ok := debug.ReadBuildInfo(); ok && info.Main.Version != "" && info.Main.Version != "(devel)" {
-				SemVer = info.Main.Version
-			}
-		}
-		fmt.Println(SemVer)
+		runUI(cmd)
 	},
 }
 
@@ -128,15 +135,20 @@ var uiCmd = &cobra.Command{
 	Use:   "ui",
 	Short: "Start a local web UI to manage the project's tags",
 	Run: func(cmd *cobra.Command, args []string) {
-		port, _ := cmd.Flags().GetString("port")
-		noOpen, _ := cmd.Flags().GetBool("no-open")
-
-		BuildContext(false) // move to the repository root
-		if err := Serve("127.0.0.1:"+port, !noOpen); err != nil {
-			fmt.Println("error starting ui:", err)
-			os.Exit(1)
-		}
+		runUI(cmd)
 	},
+}
+
+// runUI starts the local web UI using the port/no-open flags of cmd.
+func runUI(cmd *cobra.Command) {
+	port, _ := cmd.Flags().GetString("port")
+	noOpen, _ := cmd.Flags().GetBool("no-open")
+
+	BuildContext(false) // move to the repository root
+	if err := Serve("127.0.0.1:"+port, !noOpen); err != nil {
+		fmt.Println("error starting ui:", err)
+		os.Exit(1)
+	}
 }
 
 var refsCmd = &cobra.Command{
@@ -314,8 +326,10 @@ func main() {
 	resetCmd.Flags().BoolVarP(&remote, "remote", "r", false, "remove remote tags as well")
 	resetCmd.Flags().BoolVar(&sync, "sync", false, "fetch remote tags first")
 
-	uiCmd.Flags().StringP("port", "P", "7420", "port to serve the ui on")
-	uiCmd.Flags().Bool("no-open", false, "do not open the browser")
+	for _, cmd := range []*cobra.Command{rootCmd, uiCmd} {
+		cmd.Flags().StringP("port", "P", "7420", "port to serve the ui on")
+		cmd.Flags().Bool("no-open", false, "do not open the browser")
+	}
 
 	rootCmd.AddCommand(getCmd, initCmd, releaseCmd, pushCmd, syncCmd, refsCmd, untagCmd, resetCmd, uiCmd)
 	for _, part := range []string{"major", "minor", "patch", "alpha", "beta", "rc"} {
