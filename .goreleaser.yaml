@@ -6,10 +6,10 @@ before:
     - go mod tidy
 
 builds:
-  - main: ./main.go
+  - main: .
     binary: semver
     ldflags:
-      - -s -w -X "github.com/adharshmk96/semver/cmd.SemVer={{ .Tag }}"
+      - -s -w -X "main.SemVer={{ .Tag }}"
     env:
       - CGO_ENABLED=0
     goos:
