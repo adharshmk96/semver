@@ -124,6 +124,21 @@ var syncCmd = &cobra.Command{
 	},
 }
 
+var uiCmd = &cobra.Command{
+	Use:   "ui",
+	Short: "Start a local web UI to manage the project's tags",
+	Run: func(cmd *cobra.Command, args []string) {
+		port, _ := cmd.Flags().GetString("port")
+		noOpen, _ := cmd.Flags().GetBool("no-open")
+
+		BuildContext(false) // move to the repository root
+		if err := Serve("127.0.0.1:"+port, !noOpen); err != nil {
+			fmt.Println("error starting ui:", err)
+			os.Exit(1)
+		}
+	},
+}
+
 var refsCmd = &cobra.Command{
 	Use:   "refs",
 	Short: "Display references of the current version in the project",
@@ -299,7 +314,10 @@ func main() {
 	resetCmd.Flags().BoolVarP(&remote, "remote", "r", false, "remove remote tags as well")
 	resetCmd.Flags().BoolVar(&sync, "sync", false, "fetch remote tags first")
 
-	rootCmd.AddCommand(getCmd, initCmd, releaseCmd, pushCmd, syncCmd, refsCmd, untagCmd, resetCmd)
+	uiCmd.Flags().StringP("port", "P", "7420", "port to serve the ui on")
+	uiCmd.Flags().Bool("no-open", false, "do not open the browser")
+
+	rootCmd.AddCommand(getCmd, initCmd, releaseCmd, pushCmd, syncCmd, refsCmd, untagCmd, resetCmd, uiCmd)
 	for _, part := range []string{"major", "minor", "patch", "alpha", "beta", "rc"} {
 		rootCmd.AddCommand(bumpCmd(part))
 	}

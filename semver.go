@@ -77,6 +77,40 @@ func (s *Semver) String() string {
 
 func (s *Semver) IsPreRelease() bool { return s.Label != "" && s.Pre > 0 }
 
+// preRank is the precedence of a version's pre-release label. A release
+// version outranks any of its pre-releases.
+func (s *Semver) preRank() int {
+	if !s.IsPreRelease() {
+		return len(preLabels)
+	}
+	for i, l := range preLabels {
+		if l == s.Label {
+			return i
+		}
+	}
+	return -1
+}
+
+// Compare orders two versions: -1 when a is older than b, 1 when newer, 0
+// when they are equal.
+func Compare(a, b *Semver) int {
+	for _, pair := range [][2]int{
+		{a.Major, b.Major},
+		{a.Minor, b.Minor},
+		{a.Patch, b.Patch},
+		{a.preRank(), b.preRank()},
+		{a.Pre, b.Pre},
+	} {
+		switch {
+		case pair[0] < pair[1]:
+			return -1
+		case pair[0] > pair[1]:
+			return 1
+		}
+	}
+	return 0
+}
+
 // Bump increments the given part: major, minor or patch resets any
 // pre-release, a pre-release label increments (or starts) that pre-release,
 // and "release" strips the pre-release.

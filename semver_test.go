@@ -87,3 +87,32 @@ func TestIsPreRelease(t *testing.T) {
 		assert.False(t, version.IsPreRelease(), input)
 	}
 }
+
+func TestCompare(t *testing.T) {
+	// Each version is older than the one after it.
+	ordered := []string{
+		"v0.1.0",
+		"v0.2.0",
+		"v0.2.1-alpha.1",
+		"v0.2.1-alpha.2",
+		"v0.2.1-beta.1",
+		"v0.2.1-rc.1",
+		"v0.2.1",
+		"v0.3.0",
+		"v1.0.0",
+	}
+
+	for i, older := range ordered {
+		a, err := ParseSemver(older)
+		assert.NoError(t, err)
+
+		assert.Equal(t, 0, Compare(a, a), older)
+
+		for _, newer := range ordered[i+1:] {
+			b, err := ParseSemver(newer)
+			assert.NoError(t, err)
+			assert.Equal(t, -1, Compare(a, b), older+" < "+newer)
+			assert.Equal(t, 1, Compare(b, a), newer+" > "+older)
+		}
+	}
+}
