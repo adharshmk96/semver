@@ -144,7 +144,12 @@ yet, with per-tag **Push**, **Edit** (rename the tag on the same commit) and
 - **major / minor / patch** create the next version, and preview it on the button. Pick a pre-release label first to get `v1.0.0-rc.1` instead of `v1.0.0`.
 - **bump alpha / beta / rc** and **release** move a pre-release forward or promote it to a release.
 - **Push all** pushes every local tag, **Sync** fetches tags from the remote, **References** greps the project for the current version, and **Reset** removes every tag.
-- **apply to remote** makes delete, rename and reset act on origin as well; **push after tagging** pushes each new tag right away.
+- **apply to remote** makes delete, rename and reset act on origin as well.
+
+Nothing is ever pushed by a bump — use **Push** on a tag, or **Push all**, when
+you want it on origin. Without an origin remote every push control is hidden and
+tags simply stay local; outside a git repository the version lives in the
+`.version` file and there is nothing to tag or push at all.
 
 When the working tree is dirty, a card appears at the top: tags always point at
 a commit, so it lets you commit first without leaving the page. **All** stages

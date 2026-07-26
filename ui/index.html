@@ -20,11 +20,11 @@
           <a class="origin" :href="originLink" target="_blank" rel="noreferrer" x-text="state.origin"></a>
         </template>
         <template x-if="!state.origin">
-          <span class="origin">no origin remote</span>
+          <span class="origin" x-text="state.isGitRepo ? 'no origin remote' : 'no git repository'"></span>
         </template>
       </div>
       <div class="actions">
-        <button class="btn outline" :disabled="busy" @click="post('/api/sync')"
+        <button class="btn outline" x-show="state.origin" :disabled="busy" @click="post('/api/sync')"
                 title="git fetch --tags — pull tags created elsewhere">Sync</button>
         <button class="btn outline" :disabled="busy" @click="load"
                 title="Re-read tags and working tree from disk">Refresh</button>
@@ -84,9 +84,9 @@
     <section class="section">
       <div class="card">
         <h2 style="margin:0 0 .5rem;font-size:.9375rem">Initialize semver</h2>
-        <p class="hint" style="margin-bottom:.75rem">
-          Tags the latest commit with a starting version. Every later bump builds on it.
-        </p>
+        <p class="hint" style="margin-bottom:.75rem" x-text="state.isGitRepo
+          ? 'Tags the latest commit with a starting version. Every later bump builds on it.'
+          : 'Writes a starting version to the .version file. Every later bump builds on it.'"></p>
         <div class="actions">
           <input class="input" x-model="initVersion" placeholder="v0.0.1">
           <button class="btn" :disabled="busy" @click="post('/api/init', {version: initVersion})">Initialize</button>
@@ -101,21 +101,27 @@
       <div class="section-head">
         <div>
           <h2>New version</h2>
-          <p class="hint" :title="state.head.subject">
-            Tags the latest commit on
-            <strong x-text="state.head.branch"></strong>
-            (<span class="mono" x-text="state.head.commit"></span>).
-            Nothing is pushed unless you ask.
-          </p>
+          <template x-if="state.isGitRepo">
+            <p class="hint" :title="state.head.subject">
+              Tags the latest commit on
+              <strong x-text="state.head.branch"></strong>
+              (<span class="mono" x-text="state.head.commit"></span>).
+              <span x-text="state.origin
+                ? 'Nothing is pushed — use Push on the tag when you want it on origin.'
+                : 'No remote is configured, so the tag stays local.'"></span>
+            </p>
+          </template>
+          <template x-if="!state.isGitRepo">
+            <p class="hint">
+              No git repository — the new version is written to the .version file. Nothing is tagged or pushed.
+            </p>
+          </template>
           <p class="hint" x-show="state.head.tags.length">
             This commit is already tagged
             <strong class="mono" x-text="state.head.tags.join(', ')"></strong>
             — a new version would add a second tag to it.
           </p>
         </div>
-        <label class="check">
-          <input type="checkbox" x-model="pushOnBump"> push after tagging
-        </label>
       </div>
       <div class="card" style="display:grid;gap:.75rem">
         <template x-if="changed">
@@ -126,7 +132,7 @@
         <div class="actions">
           <template x-for="part in ['major','minor','patch']" :key="part">
             <button class="btn" :disabled="busy"
-                    @click="post('/api/bump', {name: part, label: preLabel, push: pushOnBump})"
+                    @click="post('/api/bump', {name: part, label: preLabel})"
                     x-text="preview(part)"></button>
           </template>
         </div>
@@ -141,12 +147,20 @@
         <div class="actions" style="border-top:1px solid var(--border);padding-top:.75rem">
           <template x-for="label in ['alpha','beta','rc']" :key="label">
             <button class="btn outline" :disabled="busy || !isPreRelease"
-                    @click="post('/api/bump', {name: label, push: pushOnBump})"
+                    @click="post('/api/bump', {name: label})"
                     x-text="'bump ' + label"></button>
           </template>
           <button class="btn outline" :disabled="busy || !isPreRelease"
-                  @click="post('/api/release', {push: pushOnBump})">release</button>
+                  @click="post('/api/release', {})">release</button>
         </div>
+        <p class="hint" x-show="isPreRelease">
+          <template x-for="part in ['alpha','beta','rc','release']" :key="part">
+            <span>
+              <span x-text="part"></span> →
+              <strong class="mono" x-text="next(part)"></strong><span x-show="part !== 'release'"> · </span>
+            </span>
+          </template>
+        </p>
         <p class="hint" x-show="isPreRelease">Bump the pre-release counter, or promote it to a plain release.</p>
         <p class="hint" x-show="!isPreRelease">
           Pre-release bumps need the current version to be a pre-release. Pick a label above and bump
@@ -163,20 +177,22 @@
         <div>
           <h2>Tags <span class="hint" x-text="'(' + state.tags.length + ')'"></span></h2>
           <p class="hint">
-            Newest first. <strong>current</strong> is the highest version semver works from;
-            <strong>local only</strong> means the tag is not on
-            <span x-text="state.origin ? 'origin' : 'any remote'"></span> yet.
+            Newest first. <strong>current</strong> is the highest version semver works from.
+            <span x-show="state.origin">
+              <strong>local only</strong> means the tag is not on origin yet.
+            </span>
+            <span x-show="!state.origin">No remote is configured, so every tag is local.</span>
           </p>
         </div>
         <div class="actions">
-          <label class="check" title="Delete, Edit and Reset also apply on origin when checked">
+          <label class="check" x-show="state.origin" title="Delete, Edit and Reset also apply on origin when checked">
             <input type="checkbox" x-model="remote"> apply to remote
           </label>
           <button class="btn outline" :disabled="busy" @click="refs"
                   title="Grep the project for the current version number">References</button>
           <button class="btn outline destructive" :disabled="busy"
                   @click="confirmAction('Reset all tags?', 'This deletes every tag' + (remote ? ' locally and on origin' : ' locally') + '. This cannot be undone.', () => post('/api/reset', {remote}))">Reset</button>
-          <button class="btn" :disabled="busy || !state.tags.length" @click="post('/api/push-all')"
+          <button class="btn" x-show="state.origin" :disabled="busy || !state.tags.length" @click="post('/api/push-all')"
                   title="git push origin --tags">Push all</button>
         </div>
       </div>
@@ -188,7 +204,7 @@
               <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
                 <span class="tag-name" x-text="tag.name"></span>
                 <span class="badge solid" x-show="tag.current">current</span>
-                <span class="badge warn" x-show="!tag.pushed">local only</span>
+                <span class="badge warn" x-show="state.origin && !tag.pushed">local only</span>
               </div>
               <div class="tag-meta">
                 <span x-text="tag.commit"></span>
@@ -197,7 +213,7 @@
               </div>
             </div>
             <div class="tag-actions">
-              <button class="btn sm" :disabled="busy || tag.pushed"
+              <button class="btn sm" x-show="state.origin" :disabled="busy || tag.pushed"
                       :title="tag.pushed ? 'already on origin' : 'git push origin ' + tag.name"
                       @click="post('/api/push', {version: tag.name})">Push</button>
               <button class="btn sm outline" :disabled="busy" @click="openRename(tag)"

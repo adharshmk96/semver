@@ -34,7 +34,6 @@ type request struct {
 	Name    string `json:"name"`
 	Label   string `json:"label"`
 	Remote  bool   `json:"remote"`
-	Push    bool   `json:"push"`
 	Message string `json:"message"`
 	All     bool   `json:"all"`
 }
@@ -157,7 +156,7 @@ func doInit(req request) error {
 }
 
 // doBump increments a part of the current version, optionally starting a
-// pre-release of it, and pushes the new tag when asked.
+// pre-release of it. The new tag is never pushed; use the push endpoints.
 func doBump(req request) error {
 	ctx := uiContext()
 	if ctx.Source == SourceNone {
@@ -181,10 +180,10 @@ func doBump(req request) error {
 		ctx.Version.Bump(req.Label)
 	}
 
-	return commit(ctx, req.Push)
+	return ctx.Commit(ctx.Version.String())
 }
 
-func doRelease(req request) error {
+func doRelease(request) error {
 	ctx := uiContext()
 	if ctx.Source == SourceNone {
 		return errors.New("semver is not initialized")
@@ -193,27 +192,33 @@ func doRelease(req request) error {
 		return errors.New("current version is not a pre-release")
 	}
 	ctx.Version.Bump("release")
-	return commit(ctx, req.Push)
-}
-
-func commit(ctx *Context, push bool) error {
-	if err := ctx.Commit(ctx.Version.String()); err != nil {
-		return err
-	}
-	if push {
-		return ctx.Push()
-	}
-	return nil
+	return ctx.Commit(ctx.Version.String())
 }
 
 func doPush(req request) error {
 	if req.Version == "" {
 		return errors.New("no version given")
 	}
+	if err := requireOrigin(); err != nil {
+		return err
+	}
 	return PushTag(req.Version)
 }
 
-func doPushAll(request) error { return PushAllTags() }
+func doPushAll(request) error {
+	if err := requireOrigin(); err != nil {
+		return err
+	}
+	return PushAllTags()
+}
+
+// requireOrigin guards the endpoints that talk to the remote.
+func requireOrigin() error {
+	if OriginURL() == "" {
+		return errors.New("no origin remote is configured")
+	}
+	return nil
+}
 
 func doDelete(req request) error {
 	if req.Version == "" {
@@ -232,7 +237,12 @@ func doRename(req request) error {
 	return RenameTag(req.Version, req.Name, req.Remote)
 }
 
-func doSync(request) error { return FetchTags() }
+func doSync(request) error {
+	if err := requireOrigin(); err != nil {
+		return err
+	}
+	return FetchTags()
+}
 
 func doCommit(req request) error {
 	if !BuildContext(false).IsGitRepo {

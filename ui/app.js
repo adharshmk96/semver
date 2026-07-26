@@ -54,7 +54,6 @@ document.addEventListener("alpine:init", () => {
     references: null,
     initVersion: "v0.0.1",
     preLabel: "",
-    pushOnBump: false,
     remote: false,
     renaming: null,
     renameTo: "",
@@ -90,6 +89,12 @@ document.addEventListener("alpine:init", () => {
       if (this.state.source === "Source: Git") return "git tags";
       if (this.state.source === "Source: File") return ".version file";
       return "not initialized";
+    },
+
+    // next is the version a pre-release bump or a release would produce.
+    next(part) {
+      const v = parse(this.state.version);
+      return v ? format(bump(v, part)) : "";
     },
 
     // preview is the version a bump button would produce.
