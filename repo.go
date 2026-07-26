@@ -208,8 +208,8 @@ func ListTags() ([]Tag, error) {
 	return tags, nil
 }
 
-// Head is the commit a new tag would be created on. Tags lists the tags that
-// already point at it.
+// Head is the commit a new tag would be created on. Tags lists the semver tags
+// already pointing at it.
 type Head struct {
 	Branch  string   `json:"branch"`
 	Commit  string   `json:"commit"`
@@ -225,8 +225,14 @@ func HeadCommit() Head {
 	head.Commit, _ = git("rev-parse", "--short", "HEAD")
 	head.Subject, _ = git("log", "-1", "--pretty=%s")
 
+	// --points-at resolves annotated tags to their commit, which comparing
+	// object names would not.
 	if out, err := git("tag", "--points-at", "HEAD"); err == nil {
-		head.Tags = strings.Fields(out)
+		for _, name := range strings.Fields(out) {
+			if _, err := ParseSemver(name); err == nil {
+				head.Tags = append(head.Tags, name)
+			}
+		}
 	}
 
 	return head

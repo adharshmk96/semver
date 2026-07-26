@@ -135,7 +135,8 @@ semver ui
 semver ui
 
 The header shows the repository name, its origin url, the current version and
-the branch and commit a new tag would land on. Each semver tag is a card marked
+the branch and commit a new tag would land on — including a note when that
+commit already carries a tag. Each semver tag is a card marked
 `current` (the highest version) and `local only` when it has not been pushed
 yet, with per-tag **Push**, **Edit** (rename the tag on the same commit) and
 **Delete** actions.
