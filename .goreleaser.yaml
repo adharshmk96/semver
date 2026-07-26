@@ -1,3 +1,5 @@
+version: 2
+
 project_name: semver
 
 before:
@@ -21,13 +23,31 @@ builds:
       - arm64
 
 archives:
-  - format: tar.gz
+  - formats: [tar.gz]
     format_overrides:
       - goos: windows
-        format: zip
-    
+        formats: [zip]
+
     # this name template makes the OS and Arch compatible with the results of `uname`.
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+homebrew_casks:
+  - name: semver
+    homepage: https://github.com/adharshmk96/semver
+    description: Semantic version management CLI for git tags and .version files
+    license: MIT
+    repository:
+      owner: adharshmk96
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    # The released binaries are unsigned, so strip the quarantine attribute
+    # Homebrew would otherwise leave on them.
+    hooks:
+      post:
+        install: |
+          if system_command("/usr/bin/xattr", args: ["-h"]).exit_status == 0
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/semver"]
+          end
 
 changelog:
   sort: asc

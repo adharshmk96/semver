@@ -13,6 +13,11 @@
 
 ## 🛠 Installation
 
+### Homebrew (macOS)
+```bash
+brew install adharshmk96/tap/semver
+```
+
 ### Direct Binary Download
 
 Linux:
