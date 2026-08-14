@@ -152,12 +152,12 @@ header .origin:hover { color: var(--foreground); }
 
 .cards { display: grid; gap: 0.75rem; }
 
+/* info on top, actions pinned to the bottom edge whatever the card height */
 .tag-card {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.75rem;
   transition: border-color 0.15s;
 }
 
@@ -178,7 +178,12 @@ header .origin:hover { color: var(--foreground); }
   flex-wrap: wrap;
 }
 
-.tag-actions { display: flex; gap: 0.5rem; }
+.tag-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: auto;
+}
 
 /* badge */
 
