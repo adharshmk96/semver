@@ -209,7 +209,7 @@ var resetCmd = &cobra.Command{
 		}
 
 		fmt.Println("resetting semver configuration...")
-		if err := ctx.Reset(remote); err != nil {
+		if err := ctx.Reset(remote, false); err != nil {
 			fmt.Println("error: resetting semver.", err)
 			return
 		}

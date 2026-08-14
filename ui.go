@@ -34,8 +34,13 @@ type request struct {
 	Name    string `json:"name"`
 	Label   string `json:"label"`
 	Remote  bool   `json:"remote"`
+	RemoteOnly bool `json:"remoteOnly"`
 	Message string `json:"message"`
 	All     bool   `json:"all"`
+	Branch  string `json:"branch"`
+	From    string `json:"from"`
+	Skip    int    `json:"skip"`
+	Limit   int    `json:"limit"`
 }
 
 // Serve starts the UI server on addr and blocks. When open is set the default
@@ -60,6 +65,13 @@ func Serve(addr string, open bool) error {
 	mux.HandleFunc("/api/commit", action(doCommit))
 	mux.HandleFunc("/api/reset", action(doReset))
 	mux.HandleFunc("/api/refs", handleRefs)
+	mux.HandleFunc("/api/branches", handleBranches)
+	mux.HandleFunc("/api/commits", handleCommits)
+	mux.HandleFunc("/api/remotes", handleRemotes)
+	mux.HandleFunc("/api/checkout", action(doCheckout))
+	mux.HandleFunc("/api/branch-delete", action(doBranchDelete))
+	mux.HandleFunc("/api/branch-create", action(doBranchCreate))
+	mux.HandleFunc("/api/fetch-remote", action(doFetchRemote))
 
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
@@ -224,6 +236,9 @@ func doDelete(req request) error {
 	if req.Version == "" {
 		return errors.New("no version given")
 	}
+	if req.RemoteOnly {
+		return UntagRemoteOnly([]string{req.Version})
+	}
 	return Untag([]string{req.Version}, req.Remote)
 }
 
@@ -238,10 +253,116 @@ func doRename(req request) error {
 }
 
 func doSync(request) error {
-	if err := requireOrigin(); err != nil {
+	return RemoteSync()
+}
+
+func requireGit() error {
+	if !BuildContext(false).IsGitRepo {
+		return errors.New("not a git repository")
+	}
+	return nil
+}
+
+func handleBranches(w http.ResponseWriter, r *http.Request) {
+	if err := requireGit(); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	local, remote, err := ListBranches()
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"local": local, "remote": remote})
+}
+
+func handleCommits(w http.ResponseWriter, r *http.Request) {
+	if err := requireGit(); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	limit, skip := 50, 0
+	if q := r.URL.Query().Get("limit"); q != "" {
+		if n, err := parseInt(q); err == nil {
+			limit = n
+		}
+	}
+	if q := r.URL.Query().Get("skip"); q != "" {
+		if n, err := parseInt(q); err == nil {
+			skip = n
+		}
+	}
+	branch := r.URL.Query().Get("branch")
+	commits, err := ListCommits(branch, limit, skip)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"commits": commits, "branch": branchOrHead(branch)})
+}
+
+func branchOrHead(branch string) string {
+	if branch != "" {
+		return branch
+	}
+	return HeadCommit().Branch
+}
+
+func handleRemotes(w http.ResponseWriter, r *http.Request) {
+	if err := requireGit(); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	remotes, err := ListRemotes()
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"remotes": remotes, "origin": OriginURL()})
+}
+
+func doCheckout(req request) error {
+	if err := requireGit(); err != nil {
 		return err
 	}
-	return FetchTags()
+	if req.Branch == "" {
+		return errors.New("branch name is required")
+	}
+	return CheckoutBranch(req.Branch, req.Remote)
+}
+
+func doBranchDelete(req request) error {
+	if err := requireGit(); err != nil {
+		return err
+	}
+	if req.Branch == "" {
+		return errors.New("branch name is required")
+	}
+	return DeleteBranch(req.Branch, req.Remote)
+}
+
+func doBranchCreate(req request) error {
+	if err := requireGit(); err != nil {
+		return err
+	}
+	return CreateBranch(req.Branch, req.From)
+}
+
+func doFetchRemote(req request) error {
+	if err := requireGit(); err != nil {
+		return err
+	}
+	name := req.Name
+	if name == "" {
+		name = "origin"
+	}
+	return FetchRemote(name)
+}
+
+func parseInt(s string) (int, error) {
+	var n int
+	_, err := fmt.Sscanf(s, "%d", &n)
+	return n, err
 }
 
 func doCommit(req request) error {
@@ -256,7 +377,7 @@ func doReset(req request) error {
 	if ctx.Source == SourceNone {
 		return errors.New("semver is not initialized")
 	}
-	return ctx.Reset(req.Remote)
+	return ctx.Reset(req.Remote, req.RemoteOnly)
 }
 
 func handleRefs(w http.ResponseWriter, r *http.Request) {
