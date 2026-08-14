@@ -1,4 +1,5 @@
 const LABELS = ["alpha", "beta", "rc"];
+const COMMITS_PAGE = 50;
 
 // parse turns "v1.2.3-rc.4" into its parts, or null when it is not a semver.
 function parse(version) {
@@ -48,25 +49,38 @@ document.addEventListener("alpine:init", () => {
       changes: { staged: 0, unstaged: 0, untracked: 0, files: [] },
       head: { branch: "", commit: "", subject: "", tags: [] },
     },
+    tab: "version",
     loaded: false,
     busy: false,
     error: "",
     references: null,
     initVersion: "v0.0.1",
     preLabel: "",
-    remote: false,
     renaming: null,
     renameTo: "",
+    renameRemote: false,
     confirming: null,
     commitMessage: "",
     commitAll: true,
+
+    branches: { local: [], remote: [] },
+    branchesLoaded: false,
+    newBranchName: "",
+
+    commits: [],
+    commitsBranch: "",
+    commitsSkip: 0,
+    commitsHasMore: false,
+    commitsLoaded: false,
+
+    remotes: [],
+    remotesLoaded: false,
 
     get changed() {
       const c = this.state.changes;
       return c.staged + c.unstaged + c.untracked > 0;
     },
 
-    // changeSummary reads like "2 staged, 1 modified, 3 untracked".
     get changeSummary() {
       const c = this.state.changes;
       return [
@@ -91,13 +105,25 @@ document.addEventListener("alpine:init", () => {
       return "not initialized";
     },
 
-    // next is the version a pre-release bump or a release would produce.
+    get visibleTabs() {
+      const tabs = [{ id: "version", label: "Version" }];
+      if (!this.state.isGitRepo) return tabs;
+      tabs.push({
+        id: "changes",
+        label: "Changes",
+        badge: this.changed ? "!" : "",
+      });
+      tabs.push({ id: "branches", label: "Branches" });
+      tabs.push({ id: "commits", label: "Commits" });
+      tabs.push({ id: "remotes", label: "Remotes" });
+      return tabs;
+    },
+
     next(part) {
       const v = parse(this.state.version);
       return v ? format(bump(v, part)) : "";
     },
 
-    // preview is the version a bump button would produce.
     preview(part) {
       const v = parse(this.state.version);
       if (!v) return part;
@@ -107,21 +133,64 @@ document.addEventListener("alpine:init", () => {
     },
 
     async load() {
-      await this.call("/api/state", null);
+      await this.fetchState();
       this.loaded = true;
+      await this.refreshTabData();
+    },
+
+    async localRefresh() {
+      await this.fetchState();
+      await this.refreshTabData();
+    },
+
+    async remoteSync() {
+      await this.post("/api/sync");
+      await this.refreshTabData();
+    },
+
+    async switchTab(id) {
+      this.tab = id;
+      await this.refreshTabData();
+    },
+
+    async refreshTabData() {
+      if (!this.state.isGitRepo) return;
+      if (this.tab === "branches") await this.loadBranches();
+      if (this.tab === "commits") await this.loadCommits();
+      if (this.tab === "remotes") await this.loadRemotes();
+    },
+
+    async fetchState() {
+      this.busy = true;
+      this.error = "";
+      try {
+        const res = await fetch("/api/state");
+        const data = await res.json();
+        if (!res.ok) {
+          this.error = data.error || res.statusText;
+          return;
+        }
+        this.state = data;
+        if (!this.state.isGitRepo && this.tab !== "version") {
+          this.tab = "version";
+        }
+      } catch (err) {
+        this.error = String(err);
+      } finally {
+        this.busy = false;
+      }
     },
 
     post(path, body) {
       return this.call(path, body || {});
     },
 
-    // call talks to the API; every mutating endpoint answers with the fresh
-    // state, so the page always renders what the repository actually holds.
+    // call talks to the API; mutating endpoints answer with the fresh state.
     async call(path, body) {
       this.busy = true;
       this.error = "";
       try {
-        const res = await fetch(path, body === null ? undefined : {
+        const res = await fetch(path, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
@@ -129,13 +198,101 @@ document.addEventListener("alpine:init", () => {
         const data = await res.json();
         if (!res.ok) {
           this.error = data.error || res.statusText;
-          return;
+          return false;
         }
         this.state = data;
+        return true;
       } catch (err) {
         this.error = String(err);
+        return false;
       } finally {
         this.busy = false;
+      }
+    },
+
+    async fetchJSON(path) {
+      this.busy = true;
+      this.error = "";
+      try {
+        const res = await fetch(path);
+        const data = await res.json();
+        if (!res.ok) {
+          this.error = data.error || res.statusText;
+          return null;
+        }
+        return data;
+      } catch (err) {
+        this.error = String(err);
+        return null;
+      } finally {
+        this.busy = false;
+      }
+    },
+
+    async loadBranches() {
+      const data = await this.fetchJSON("/api/branches");
+      if (!data) return;
+      this.branches = { local: data.local || [], remote: data.remote || [] };
+      this.branchesLoaded = true;
+    },
+
+    async loadCommits() {
+      const branch = this.state.head.branch;
+      const data = await this.fetchJSON(
+        `/api/commits?limit=${COMMITS_PAGE}&skip=${this.commitsSkip}&branch=${encodeURIComponent(branch)}`
+      );
+      if (!data) return;
+      this.commits = data.commits || [];
+      this.commitsBranch = data.branch || branch;
+      this.commitsHasMore = this.commits.length === COMMITS_PAGE;
+      this.commitsLoaded = true;
+    },
+
+    async nextCommits() {
+      this.commitsSkip += COMMITS_PAGE;
+      await this.loadCommits();
+    },
+
+    async prevCommits() {
+      this.commitsSkip = Math.max(0, this.commitsSkip - COMMITS_PAGE);
+      await this.loadCommits();
+    },
+
+    async loadRemotes() {
+      const data = await this.fetchJSON("/api/remotes");
+      if (!data) return;
+      this.remotes = data.remotes || [];
+      this.remotesLoaded = true;
+    },
+
+    async checkoutBranch(name, isRemote) {
+      const ok = await this.call("/api/checkout", { branch: name, remote: isRemote });
+      if (ok) {
+        this.commitsSkip = 0;
+        await this.refreshTabData();
+      }
+    },
+
+    async deleteBranch(name, isRemote) {
+      const ok = await this.call("/api/branch-delete", { branch: name, remote: isRemote });
+      if (ok) await this.loadBranches();
+    },
+
+    async createBranch() {
+      const name = this.newBranchName.trim();
+      if (!name) return;
+      const ok = await this.call("/api/branch-create", { branch: name });
+      if (ok) {
+        this.newBranchName = "";
+        await this.loadBranches();
+      }
+    },
+
+    async fetchRemote(name) {
+      const ok = await this.call("/api/fetch-remote", { name });
+      if (ok) {
+        await this.loadRemotes();
+        if (this.tab === "branches") await this.loadBranches();
       }
     },
 
@@ -155,13 +312,17 @@ document.addEventListener("alpine:init", () => {
     async commit() {
       const message = this.commitMessage.trim();
       if (!message) return;
-      await this.post("/api/commit", { message, all: this.commitAll });
-      if (!this.error) this.commitMessage = "";
+      const ok = await this.post("/api/commit", { message, all: this.commitAll });
+      if (ok) {
+        this.commitMessage = "";
+        await this.refreshTabData();
+      }
     },
 
     openRename(tag) {
       this.renaming = tag;
       this.renameTo = tag.name;
+      this.renameRemote = false;
     },
 
     async submitRename() {
@@ -169,7 +330,7 @@ document.addEventListener("alpine:init", () => {
       const to = this.renameTo;
       if (!to || to === from) { this.renaming = null; return; }
       this.renaming = null;
-      await this.post("/api/rename", { version: from, name: to, remote: this.remote });
+      await this.post("/api/rename", { version: from, name: to, remote: this.renameRemote });
     },
 
     confirmAction(title, body, run) {

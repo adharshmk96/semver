@@ -139,7 +139,7 @@ func TestReset(t *testing.T) {
 		tempDir(t)
 		assert.NoError(t, os.WriteFile(VersionFile, []byte("v1.0.0"), 0644))
 
-		assert.NoError(t, BuildContext(false).Reset(false))
+		assert.NoError(t, BuildContext(false).Reset(false, false))
 		assert.NoFileExists(t, VersionFile)
 	})
 
@@ -148,7 +148,29 @@ func TestReset(t *testing.T) {
 		gitRepo(t, "v1.0.0")
 		assert.NoError(t, exec.Command("git", "tag", "v1.1.0").Run())
 
-		assert.NoError(t, BuildContext(false).Reset(false))
+		assert.NoError(t, BuildContext(false).Reset(false, false))
 		assert.Equal(t, SourceNone, BuildContext(false).Source)
 	})
+}
+
+func TestListBranches(t *testing.T) {
+	tempDir(t)
+	gitRepo(t, "v1.0.0")
+
+	local, remote, err := ListBranches()
+	assert.NoError(t, err)
+	assert.NotEmpty(t, local)
+	assert.True(t, local[0].Current)
+	assert.Empty(t, remote)
+}
+
+func TestListCommits(t *testing.T) {
+	tempDir(t)
+	gitRepo(t, "v1.0.0")
+
+	commits, err := ListCommits("", 10, 0)
+	assert.NoError(t, err)
+	assert.Len(t, commits, 1)
+	assert.Equal(t, "initial commit", commits[0].Subject)
+	assert.Equal(t, []string{"v1.0.0"}, commits[0].Tags)
 }

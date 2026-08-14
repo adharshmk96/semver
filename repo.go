@@ -97,8 +97,8 @@ func (c *Context) Push() error {
 	return gitRun("push", "origin", c.Version.String())
 }
 
-// Reset removes every tag (and optionally every remote tag), or the .version file.
-func (c *Context) Reset(remote bool) error {
+// Reset removes every tag locally, remotely, or remote-only, or the .version file.
+func (c *Context) Reset(remote, remoteOnly bool) error {
 	if !c.IsGitRepo {
 		return os.Remove(VersionFile)
 	}
@@ -108,7 +108,24 @@ func (c *Context) Reset(remote bool) error {
 		return err
 	}
 
-	return Untag(strings.Fields(tags), remote)
+	names := strings.Fields(tags)
+	if remoteOnly {
+		return UntagRemoteOnly(names)
+	}
+	return Untag(names, remote)
+}
+
+// UntagRemoteOnly deletes tags on origin without removing local tags.
+func UntagRemoteOnly(versions []string) error {
+	if OriginURL() == "" {
+		return errors.New("no origin remote is configured")
+	}
+	for _, version := range versions {
+		if err := gitRun("push", "--delete", "origin", version); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // Untag deletes the given tags locally, and remotely when remote is set.
@@ -128,6 +145,260 @@ func Untag(versions []string, remote bool) error {
 
 // FetchTags fetches tags from the remote.
 func FetchTags() error { return gitRun("fetch", "--tags") }
+
+// RemoteSync fetches branches and tags from origin and prunes stale remote refs.
+func RemoteSync() error {
+	if OriginURL() == "" {
+		return errors.New("no origin remote is configured")
+	}
+	if err := gitRun("fetch", "origin", "--prune"); err != nil {
+		return err
+	}
+	return gitRun("fetch", "--tags")
+}
+
+// Branch is a local or remote-tracking branch ref.
+type Branch struct {
+	Name    string `json:"name"`
+	Commit  string `json:"commit"`
+	Subject string `json:"subject"`
+	Current bool   `json:"current"`
+}
+
+// ListBranches returns local branches and origin remote-tracking branches.
+func ListBranches() (local []Branch, remote []Branch, err error) {
+	current, _ := git("rev-parse", "--abbrev-ref", "HEAD")
+
+	local, err = parseBranches("refs/heads", current, false)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if OriginURL() != "" {
+		remote, err = parseBranches("refs/remotes/origin", current, true)
+		if err != nil {
+			return local, nil, err
+		}
+	}
+
+	return local, remote, nil
+}
+
+func parseBranches(refPrefix string, current string, isRemote bool) ([]Branch, error) {
+	out, err := run("git", "for-each-ref", "--format=%(refname:short)%09%(objectname:short)%09%(contents:subject)", refPrefix)
+	if err != nil {
+		return nil, err
+	}
+
+	var branches []Branch
+	for _, line := range strings.Split(out, "\n") {
+		if line == "" {
+			continue
+		}
+		fields := strings.SplitN(line, "\t", 3)
+		if len(fields) < 2 {
+			continue
+		}
+		name := fields[0]
+		if isRemote && (name == "origin" || name == "origin/HEAD") {
+			continue
+		}
+		b := Branch{Name: name, Commit: fields[1]}
+		if len(fields) == 3 {
+			b.Subject = fields[2]
+		}
+		if !isRemote && name == current {
+			b.Current = true
+		}
+		branches = append(branches, b)
+	}
+
+	sort.Slice(branches, func(i, j int) bool {
+		if branches[i].Current {
+			return true
+		}
+		if branches[j].Current {
+			return false
+		}
+		return branches[i].Name < branches[j].Name
+	})
+
+	return branches, nil
+}
+
+// CheckoutBranch switches to a local branch or creates one from a remote-tracking ref.
+func CheckoutBranch(name string, isRemote bool) error {
+	if WorkingTree().Any() {
+		return errors.New("uncommitted changes — commit or stash before switching branches")
+	}
+
+	if isRemote {
+		ref := name
+		if !strings.HasPrefix(ref, "origin/") {
+			ref = "origin/" + ref
+		}
+		local := strings.TrimPrefix(ref, "origin/")
+		if local == "HEAD" {
+			return errors.New("cannot checkout origin/HEAD")
+		}
+		if _, err := git("rev-parse", "--verify", "refs/heads/"+local); err == nil {
+			return gitRun("checkout", local)
+		}
+		return gitRun("checkout", "-b", local, ref)
+	}
+
+	return gitRun("checkout", name)
+}
+
+// DeleteBranch removes a branch locally or on origin.
+func DeleteBranch(name string, remote bool) error {
+	if remote {
+		if OriginURL() == "" {
+			return errors.New("no origin remote is configured")
+		}
+		branch := strings.TrimPrefix(name, "origin/")
+		if branch == "HEAD" || branch == "" {
+			return errors.New("cannot delete origin/HEAD")
+		}
+		return gitRun("push", "origin", "--delete", branch)
+	}
+
+	current, _ := git("rev-parse", "--abbrev-ref", "HEAD")
+	if name == current {
+		return errors.New("cannot delete the current branch")
+	}
+	if err := gitRun("branch", "-d", name); err != nil {
+		return gitRun("branch", "-D", name)
+	}
+	return nil
+}
+
+// CreateBranch creates a new local branch, optionally from a starting ref.
+func CreateBranch(name, from string) error {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return errors.New("branch name is required")
+	}
+	if from == "" {
+		return gitRun("branch", name)
+	}
+	return gitRun("branch", name, from)
+}
+
+// CommitEntry is one commit on a branch log.
+type CommitEntry struct {
+	Hash    string   `json:"hash"`
+	Subject string   `json:"subject"`
+	Author  string   `json:"author"`
+	Date    string   `json:"date"`
+	Tags    []string `json:"tags"`
+}
+
+// ListCommits returns recent commits on the given branch.
+func ListCommits(branch string, limit, skip int) ([]CommitEntry, error) {
+	if branch == "" {
+		head := HeadCommit()
+		branch = head.Branch
+	}
+	if branch == "" {
+		return nil, errors.New("no branch to log")
+	}
+	if limit <= 0 || limit > 200 {
+		limit = 50
+	}
+	if skip < 0 {
+		skip = 0
+	}
+
+	out, err := run("git", "log", branch,
+		"--format=%H%x09%h%x09%s%x09%an%x09%ad",
+		"--date=short",
+		"-n", fmt.Sprintf("%d", limit),
+		"--skip", fmt.Sprintf("%d", skip))
+	if err != nil {
+		return nil, err
+	}
+
+	var commits []CommitEntry
+	for _, line := range strings.Split(out, "\n") {
+		if line == "" {
+			continue
+		}
+		fields := strings.SplitN(line, "\t", 5)
+		if len(fields) < 5 {
+			continue
+		}
+		entry := CommitEntry{
+			Hash:    fields[1],
+			Subject: fields[2],
+			Author:  fields[3],
+			Date:    fields[4],
+			Tags:    []string{},
+		}
+		if tagOut, err := git("tag", "--points-at", fields[0]); err == nil {
+			for _, tag := range strings.Fields(tagOut) {
+				if _, err := ParseSemver(tag); err == nil {
+					entry.Tags = append(entry.Tags, tag)
+				}
+			}
+		}
+		commits = append(commits, entry)
+	}
+
+	return commits, nil
+}
+
+// RemoteInfo describes a configured git remote.
+type RemoteInfo struct {
+	Name string `json:"name"`
+	URL  string `json:"url"`
+}
+
+// ListRemotes returns every configured remote and its fetch url.
+func ListRemotes() ([]RemoteInfo, error) {
+	out, err := run("git", "remote", "-v")
+	if err != nil {
+		return nil, err
+	}
+
+	seen := map[string]bool{}
+	var remotes []RemoteInfo
+	for _, line := range strings.Split(out, "\n") {
+		if line == "" {
+			continue
+		}
+		fields := strings.Fields(line)
+		if len(fields) < 2 {
+			continue
+		}
+		name, url := fields[0], fields[1]
+		if fields[len(fields)-1] != "(fetch)" || seen[name] {
+			continue
+		}
+		seen[name] = true
+		remotes = append(remotes, RemoteInfo{Name: name, URL: url})
+	}
+
+	sort.Slice(remotes, func(i, j int) bool {
+		return remotes[i].Name < remotes[j].Name
+	})
+
+	return remotes, nil
+}
+
+// FetchRemote fetches all refs from a single remote and prunes deleted branches.
+func FetchRemote(name string) error {
+	if strings.TrimSpace(name) == "" {
+		return errors.New("remote name is required")
+	}
+	if err := gitRun("fetch", name, "--prune"); err != nil {
+		return err
+	}
+	if name == "origin" {
+		return gitRun("fetch", "--tags")
+	}
+	return nil
+}
 
 // RepoName is the base name of the repository root directory.
 func RepoName() string {

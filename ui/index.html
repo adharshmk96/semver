@@ -23,11 +23,11 @@
           <span class="origin" x-text="state.isGitRepo ? 'no origin remote' : 'no git repository'"></span>
         </template>
       </div>
-      <div class="actions">
-        <button class="btn outline" x-show="state.origin" :disabled="busy" @click="post('/api/sync')"
-                title="git fetch --tags — pull tags created elsewhere">Sync</button>
-        <button class="btn outline" :disabled="busy" @click="load"
-                title="Re-read tags and working tree from disk">Refresh</button>
+      <div class="actions" x-show="state.isGitRepo">
+        <button class="btn outline" x-show="state.origin" :disabled="busy" @click="remoteSync"
+                title="git fetch origin --prune && git fetch --tags">Remote sync</button>
+        <button class="btn outline" :disabled="busy" @click="localRefresh"
+                title="Re-read local tags, branches, and working tree">Local refresh</button>
       </div>
     </div>
     <div class="current">
@@ -46,212 +46,378 @@
     <div class="alert error" style="margin-top:1.5rem" x-text="error"></div>
   </template>
 
-  <!-- uncommitted changes -->
-  <template x-if="loaded && changed">
-    <section class="section">
-      <div class="card pending">
+  <nav class="tabs" x-show="loaded">
+    <template x-for="t in visibleTabs" :key="t.id">
+      <button class="tab" :class="tab === t.id ? 'active' : ''" @click="switchTab(t.id)">
+        <span x-text="t.label"></span>
+        <span class="tab-badge" x-show="t.badge" x-text="t.badge"></span>
+      </button>
+    </template>
+  </nav>
+
+  <!-- version tab -->
+  <div class="tab-panel" x-show="loaded && tab === 'version'">
+
+    <template x-if="!state.version">
+      <section class="section">
+        <div class="card">
+          <h2 style="margin:0 0 .5rem;font-size:.9375rem">Initialize semver</h2>
+          <p class="hint" style="margin-bottom:.75rem" x-text="state.isGitRepo
+            ? 'Tags the latest commit with a starting version. Every later bump builds on it.'
+            : 'Writes a starting version to the .version file. Every later bump builds on it.'"></p>
+          <div class="actions">
+            <input class="input" x-model="initVersion" placeholder="v0.0.1">
+            <button class="btn" :disabled="busy" @click="post('/api/init', {version: initVersion})">Initialize</button>
+          </div>
+        </div>
+      </section>
+    </template>
+
+    <template x-if="state.version">
+      <section class="section">
         <div class="section-head">
           <div>
-            <h2>Uncommitted changes</h2>
-            <p class="hint">Commit them first — tags always point at a commit, never at the working tree.</p>
+            <h2>New version</h2>
+            <template x-if="state.isGitRepo">
+              <p class="hint" :title="state.head.subject">
+                Tags the latest commit on
+                <strong x-text="state.head.branch"></strong>
+                (<span class="mono" x-text="state.head.commit"></span>).
+                <span x-text="state.origin
+                  ? 'Nothing is pushed — use Push to remote on the tag when you want it on origin.'
+                  : 'No remote is configured, so the tag stays local.'"></span>
+              </p>
+            </template>
+            <template x-if="!state.isGitRepo">
+              <p class="hint">
+                No git repository — the new version is written to the .version file. Nothing is tagged or pushed.
+              </p>
+            </template>
+            <p class="hint" x-show="state.head.tags.length">
+              This commit is already tagged
+              <strong class="mono" x-text="state.head.tags.join(', ')"></strong>
+              — a new version would add a second tag to it.
+            </p>
           </div>
-          <span class="hint" x-text="changeSummary"></span>
         </div>
-
-        <details class="files">
-          <summary class="hint" x-text="'show files (' + state.changes.files.length + ')'"></summary>
-          <pre class="refs" x-text="state.changes.files.join('\n')"></pre>
-        </details>
-
-        <div class="actions" style="margin-top:.75rem">
-          <input class="input grow" x-model="commitMessage" placeholder="Commit message"
-                 @keydown.enter="commit">
-          <div class="toggle">
-            <button class="btn sm" :class="commitAll ? '' : 'ghost'" @click="commitAll = true">All</button>
-            <button class="btn sm" :class="commitAll ? 'ghost' : ''" @click="commitAll = false">Staged</button>
-          </div>
-          <button class="btn" :disabled="busy || !commitMessage.trim()" @click="commit">Commit</button>
-        </div>
-        <p class="hint" style="margin-top:.5rem" x-text="commitAll
-          ? 'Stages every change, including untracked files, then commits.'
-          : 'Commits only what is already staged.'"></p>
-      </div>
-    </section>
-  </template>
-
-  <!-- not initialized -->
-  <template x-if="loaded && !state.version">
-    <section class="section">
-      <div class="card">
-        <h2 style="margin:0 0 .5rem;font-size:.9375rem">Initialize semver</h2>
-        <p class="hint" style="margin-bottom:.75rem" x-text="state.isGitRepo
-          ? 'Tags the latest commit with a starting version. Every later bump builds on it.'
-          : 'Writes a starting version to the .version file. Every later bump builds on it.'"></p>
-        <div class="actions">
-          <input class="input" x-model="initVersion" placeholder="v0.0.1">
-          <button class="btn" :disabled="busy" @click="post('/api/init', {version: initVersion})">Initialize</button>
-        </div>
-      </div>
-    </section>
-  </template>
-
-  <!-- bump -->
-  <template x-if="loaded && state.version">
-    <section class="section">
-      <div class="section-head">
-        <div>
-          <h2>New version</h2>
-          <template x-if="state.isGitRepo">
-            <p class="hint" :title="state.head.subject">
-              Tags the latest commit on
-              <strong x-text="state.head.branch"></strong>
-              (<span class="mono" x-text="state.head.commit"></span>).
-              <span x-text="state.origin
-                ? 'Nothing is pushed — use Push on the tag when you want it on origin.'
-                : 'No remote is configured, so the tag stays local.'"></span>
+        <div class="card" style="display:grid;gap:.75rem">
+          <template x-if="changed">
+            <p class="hint warn-text">
+              You have uncommitted changes — a new tag points at the last commit, not at your working tree.
             </p>
           </template>
-          <template x-if="!state.isGitRepo">
-            <p class="hint">
-              No git repository — the new version is written to the .version file. Nothing is tagged or pushed.
-            </p>
-          </template>
-          <p class="hint" x-show="state.head.tags.length">
-            This commit is already tagged
-            <strong class="mono" x-text="state.head.tags.join(', ')"></strong>
-            — a new version would add a second tag to it.
-          </p>
-        </div>
-      </div>
-      <div class="card" style="display:grid;gap:.75rem">
-        <template x-if="changed">
-          <p class="hint warn-text">
-            You have uncommitted changes — a new tag points at the last commit, not at your working tree.
-          </p>
-        </template>
-        <div class="actions">
-          <template x-for="part in ['major','minor','patch']" :key="part">
-            <button class="btn" :disabled="busy"
-                    @click="post('/api/bump', {name: part, label: preLabel})"
-                    x-text="preview(part)"></button>
-          </template>
-        </div>
-        <div class="actions">
-          <span class="hint" style="align-self:center"
-                title="Applied on top of the major/minor/patch bump above, e.g. v1.0.0-rc.1">Pre-release:</span>
-          <template x-for="label in ['', 'alpha','beta','rc']" :key="label">
-            <button class="btn sm" :class="preLabel === label ? '' : 'outline'"
-                    @click="preLabel = label" x-text="label || 'none'"></button>
-          </template>
-        </div>
-        <div class="actions" style="border-top:1px solid var(--border);padding-top:.75rem">
-          <template x-for="label in ['alpha','beta','rc']" :key="label">
+          <div class="actions">
+            <template x-for="part in ['major','minor','patch']" :key="part">
+              <button class="btn" :disabled="busy"
+                      @click="post('/api/bump', {name: part, label: preLabel})"
+                      x-text="preview(part)"></button>
+            </template>
+          </div>
+          <div class="actions">
+            <span class="hint" style="align-self:center"
+                  title="Applied on top of the major/minor/patch bump above, e.g. v1.0.0-rc.1">Pre-release:</span>
+            <template x-for="label in ['', 'alpha','beta','rc']" :key="label">
+              <button class="btn sm" :class="preLabel === label ? '' : 'outline'"
+                      @click="preLabel = label" x-text="label || 'none'"></button>
+            </template>
+          </div>
+          <div class="actions" style="border-top:1px solid var(--border);padding-top:.75rem">
+            <template x-for="label in ['alpha','beta','rc']" :key="label">
+              <button class="btn outline" :disabled="busy || !isPreRelease"
+                      @click="post('/api/bump', {name: label})"
+                      x-text="'bump ' + label"></button>
+            </template>
             <button class="btn outline" :disabled="busy || !isPreRelease"
-                    @click="post('/api/bump', {name: label})"
-                    x-text="'bump ' + label"></button>
-          </template>
-          <button class="btn outline" :disabled="busy || !isPreRelease"
-                  @click="post('/api/release', {})">release</button>
+                    @click="post('/api/release', {})">release</button>
+          </div>
+          <p class="hint" x-show="isPreRelease">
+            <template x-for="part in ['alpha','beta','rc','release']" :key="part">
+              <span>
+                <span x-text="part"></span> →
+                <strong class="mono" x-text="next(part)"></strong><span x-show="part !== 'release'"> · </span>
+              </span>
+            </template>
+          </p>
+          <p class="hint" x-show="isPreRelease">Bump the pre-release counter, or promote it to a plain release.</p>
+          <p class="hint" x-show="!isPreRelease">
+            Pre-release bumps need the current version to be a pre-release. Pick a label above and bump
+            major, minor or patch to start one — you cannot go back to a pre-release from a release.
+          </p>
         </div>
-        <p class="hint" x-show="isPreRelease">
-          <template x-for="part in ['alpha','beta','rc','release']" :key="part">
-            <span>
-              <span x-text="part"></span> →
-              <strong class="mono" x-text="next(part)"></strong><span x-show="part !== 'release'"> · </span>
-            </span>
-          </template>
-        </p>
-        <p class="hint" x-show="isPreRelease">Bump the pre-release counter, or promote it to a plain release.</p>
-        <p class="hint" x-show="!isPreRelease">
-          Pre-release bumps need the current version to be a pre-release. Pick a label above and bump
-          major, minor or patch to start one — you cannot go back to a pre-release from a release.
-        </p>
-      </div>
-    </section>
-  </template>
+      </section>
+    </template>
 
-  <!-- tags -->
-  <template x-if="loaded && state.isGitRepo">
+    <template x-if="state.isGitRepo">
+      <section class="section">
+        <div class="section-head">
+          <div>
+            <h2>Tags <span class="hint" x-text="'(' + state.tags.length + ')'"></span></h2>
+            <p class="hint">
+              Newest first. <strong>current</strong> is the highest version semver works from.
+              <span x-show="state.origin">
+                <strong>local only</strong> means the tag is not on origin yet.
+              </span>
+              <span x-show="!state.origin">No remote is configured, so every tag is local.</span>
+            </p>
+          </div>
+          <div class="actions">
+            <button class="btn outline" :disabled="busy" @click="refs"
+                    title="Grep the project for the current version number">References</button>
+            <button class="btn outline destructive" :disabled="busy"
+                    @click="confirmAction('Delete all tags locally?', 'Deletes every local tag. Remote tags are untouched.', () => post('/api/reset', {remote: false}))">Delete all tags locally</button>
+            <button class="btn outline destructive" x-show="state.origin" :disabled="busy"
+                    @click="confirmAction('Delete all tags on remote?', 'Deletes every tag on origin. Local tags remain.', () => post('/api/reset', {remote: true, remoteOnly: true}))">Delete all tags on remote</button>
+            <button class="btn" x-show="state.origin" :disabled="busy || !state.tags.length" @click="post('/api/push-all')"
+                    title="git push origin --tags">Push all tags to remote</button>
+          </div>
+        </div>
+
+        <div class="cards">
+          <template x-for="tag in state.tags" :key="tag.name">
+            <div class="card tag-card">
+              <div>
+                <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
+                  <span class="tag-name" x-text="tag.name"></span>
+                  <span class="badge solid" x-show="tag.current">current</span>
+                  <span class="badge warn" x-show="state.origin && !tag.pushed">local only</span>
+                </div>
+                <div class="tag-meta">
+                  <span x-text="tag.commit"></span>
+                  <span x-text="tag.date"></span>
+                  <span x-text="tag.subject"></span>
+                </div>
+              </div>
+              <div class="tag-actions">
+                <button class="btn sm" x-show="state.origin" :disabled="busy || tag.pushed"
+                        :title="tag.pushed ? 'already on origin' : 'git push origin ' + tag.name"
+                        @click="post('/api/push', {version: tag.name})">Push to remote</button>
+                <button class="btn sm outline" :disabled="busy" @click="openRename(tag)"
+                        title="Rename locally: re-tags the same commit under a new version">Edit locally</button>
+                <button class="btn sm destructive" :disabled="busy"
+                        @click="confirmAction('Delete tag locally?', 'Removes ' + tag.name + ' from this repository.', () => post('/api/delete', {version: tag.name, remote: false}))">Delete locally</button>
+                <button class="btn sm destructive" x-show="state.origin" :disabled="busy"
+                        @click="confirmAction('Delete tag on remote?', 'Removes ' + tag.name + ' from origin. Local tag remains.', () => post('/api/delete', {version: tag.name, remote: true, remoteOnly: true}))">Delete on remote</button>
+              </div>
+            </div>
+          </template>
+        </div>
+
+        <template x-if="!state.tags.length">
+          <div class="empty">No semver tags yet.</div>
+        </template>
+      </section>
+    </template>
+
+    <template x-if="references !== null">
+      <section class="section">
+        <div class="section-head">
+          <h2>References to <span x-text="state.version"></span></h2>
+          <button class="btn ghost sm" @click="references = null">Close</button>
+        </div>
+        <pre class="refs" x-text="references || 'No references found.'"></pre>
+      </section>
+    </template>
+  </div>
+
+  <!-- changes tab -->
+  <div class="tab-panel" x-show="loaded && tab === 'changes' && state.isGitRepo">
+    <section class="section">
+      <template x-if="!changed">
+        <div class="empty">Working tree is clean — nothing to commit.</div>
+      </template>
+      <template x-if="changed">
+        <div class="card pending">
+          <div class="section-head">
+            <div>
+              <h2>Uncommitted changes</h2>
+              <p class="hint">Commit locally first — tags always point at a commit, never at the working tree.</p>
+            </div>
+            <span class="hint" x-text="changeSummary"></span>
+          </div>
+
+          <details class="files">
+            <summary class="hint" x-text="'show files (' + state.changes.files.length + ')'"></summary>
+            <pre class="refs" x-text="state.changes.files.join('\n')"></pre>
+          </details>
+
+          <div class="actions" style="margin-top:.75rem">
+            <input class="input grow" x-model="commitMessage" placeholder="Commit message"
+                   @keydown.enter="commit">
+            <div class="toggle">
+              <button class="btn sm" :class="commitAll ? '' : 'ghost'" @click="commitAll = true">All</button>
+              <button class="btn sm" :class="commitAll ? 'ghost' : ''" @click="commitAll = false">Staged</button>
+            </div>
+            <button class="btn" :disabled="busy || !commitMessage.trim()" @click="commit">Commit locally</button>
+          </div>
+          <p class="hint" style="margin-top:.5rem" x-text="commitAll
+            ? 'Stages every change locally, including untracked files, then commits.'
+            : 'Commits locally only what is already staged.'"></p>
+        </div>
+      </template>
+    </section>
+  </div>
+
+  <!-- branches tab -->
+  <div class="tab-panel" x-show="loaded && tab === 'branches' && state.isGitRepo">
     <section class="section">
       <div class="section-head">
         <div>
-          <h2>Tags <span class="hint" x-text="'(' + state.tags.length + ')'"></span></h2>
-          <p class="hint">
-            Newest first. <strong>current</strong> is the highest version semver works from.
-            <span x-show="state.origin">
-              <strong>local only</strong> means the tag is not on origin yet.
-            </span>
-            <span x-show="!state.origin">No remote is configured, so every tag is local.</span>
-          </p>
+          <h2>Local branches</h2>
+          <p class="hint">Branches in this repository. Checkout switches your local HEAD.</p>
         </div>
         <div class="actions">
-          <label class="check" x-show="state.origin" title="Delete, Edit and Reset also apply on origin when checked">
-            <input type="checkbox" x-model="remote"> apply to remote
-          </label>
-          <button class="btn outline" :disabled="busy" @click="refs"
-                  title="Grep the project for the current version number">References</button>
-          <button class="btn outline destructive" :disabled="busy"
-                  @click="confirmAction('Reset all tags?', 'This deletes every tag' + (remote ? ' locally and on origin' : ' locally') + '. This cannot be undone.', () => post('/api/reset', {remote}))">Reset</button>
-          <button class="btn" x-show="state.origin" :disabled="busy || !state.tags.length" @click="post('/api/push-all')"
-                  title="git push origin --tags">Push all</button>
+          <input class="input" x-model="newBranchName" placeholder="new branch name">
+          <button class="btn outline" :disabled="busy || !newBranchName.trim()"
+                  @click="createBranch">Create locally</button>
         </div>
       </div>
-
       <div class="cards">
-        <template x-for="tag in state.tags" :key="tag.name">
+        <template x-for="branch in branches.local" :key="branch.name">
           <div class="card tag-card">
             <div>
               <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
-                <span class="tag-name" x-text="tag.name"></span>
-                <span class="badge solid" x-show="tag.current">current</span>
-                <span class="badge warn" x-show="state.origin && !tag.pushed">local only</span>
+                <span class="tag-name" x-text="branch.name"></span>
+                <span class="badge solid" x-show="branch.current">current</span>
               </div>
               <div class="tag-meta">
-                <span x-text="tag.commit"></span>
-                <span x-text="tag.date"></span>
-                <span x-text="tag.subject"></span>
+                <span x-text="branch.commit"></span>
+                <span x-text="branch.subject"></span>
               </div>
             </div>
             <div class="tag-actions">
-              <button class="btn sm" x-show="state.origin" :disabled="busy || tag.pushed"
-                      :title="tag.pushed ? 'already on origin' : 'git push origin ' + tag.name"
-                      @click="post('/api/push', {version: tag.name})">Push</button>
-              <button class="btn sm outline" :disabled="busy" @click="openRename(tag)"
-                      title="Rename: re-tags the same commit under a new version">Edit</button>
-              <button class="btn sm destructive" :disabled="busy"
-                      @click="confirmAction('Delete ' + tag.name + '?', 'Removes the tag' + (remote ? ' locally and on origin.' : ' locally.'), () => post('/api/delete', {version: tag.name, remote}))">Delete</button>
+              <button class="btn sm" :disabled="busy || branch.current"
+                      @click="checkoutBranch(branch.name, false)">Checkout locally</button>
+              <button class="btn sm destructive" :disabled="busy || branch.current"
+                      @click="confirmAction('Delete branch locally?', 'Removes ' + branch.name + ' from this repository.', () => deleteBranch(branch.name, false))">Delete locally</button>
             </div>
           </div>
         </template>
       </div>
-
-      <template x-if="!state.tags.length">
-        <div class="empty">No semver tags yet.</div>
+      <template x-if="branchesLoaded && !branches.local.length">
+        <div class="empty">No local branches.</div>
       </template>
     </section>
-  </template>
 
-  <!-- references -->
-  <template x-if="references !== null">
+    <section class="section" x-show="state.origin">
+      <div class="section-head">
+        <div>
+          <h2>Remote branches <span class="hint">(origin)</span></h2>
+          <p class="hint">Tracking refs from origin. Checkout creates or switches a local branch.</p>
+        </div>
+      </div>
+      <div class="cards">
+        <template x-for="branch in branches.remote" :key="branch.name">
+          <div class="card tag-card">
+            <div>
+              <span class="tag-name" x-text="branch.name"></span>
+              <div class="tag-meta">
+                <span x-text="branch.commit"></span>
+                <span x-text="branch.subject"></span>
+              </div>
+            </div>
+            <div class="tag-actions">
+              <button class="btn sm" :disabled="busy"
+                      @click="checkoutBranch(branch.name, true)">Checkout locally</button>
+              <button class="btn sm destructive" :disabled="busy"
+                      @click="confirmAction('Delete branch on remote?', 'Removes ' + branch.name + ' from origin.', () => deleteBranch(branch.name, true))">Delete on remote</button>
+            </div>
+          </div>
+        </template>
+      </div>
+      <template x-if="branchesLoaded && !branches.remote.length">
+        <div class="empty">No remote branches on origin. Use Remote sync to fetch.</div>
+      </template>
+    </section>
+
+    <section class="section" x-show="!state.origin">
+      <div class="empty">No origin remote — remote branches are unavailable.</div>
+    </section>
+  </div>
+
+  <!-- commits tab -->
+  <div class="tab-panel" x-show="loaded && tab === 'commits' && state.isGitRepo">
     <section class="section">
       <div class="section-head">
-        <h2>References to <span x-text="state.version"></span></h2>
-        <button class="btn ghost sm" @click="references = null">Close</button>
+        <div>
+          <h2>Commits on <span class="mono" x-text="commitsBranch || state.head.branch"></span></h2>
+          <p class="hint">Local log for the current branch. Semver tags on each commit are shown when present.</p>
+        </div>
+        <div class="actions">
+          <button class="btn outline sm" :disabled="busy || commitsSkip === 0" @click="prevCommits">Previous</button>
+          <button class="btn outline sm" :disabled="busy || !commitsHasMore" @click="nextCommits">Next</button>
+        </div>
       </div>
-      <pre class="refs" x-text="references || 'No references found.'"></pre>
+      <div class="cards">
+        <template x-for="c in commits" :key="c.hash">
+          <div class="card tag-card">
+            <div>
+              <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
+                <span class="tag-name mono" x-text="c.hash"></span>
+                <template x-for="tag in c.tags" :key="tag">
+                  <span class="badge solid" x-text="tag"></span>
+                </template>
+              </div>
+              <div class="tag-meta">
+                <span x-text="c.date"></span>
+                <span x-text="c.author"></span>
+                <span x-text="c.subject"></span>
+              </div>
+            </div>
+          </div>
+        </template>
+      </div>
+      <template x-if="commitsLoaded && !commits.length">
+        <div class="empty">No commits on this branch.</div>
+      </template>
     </section>
-  </template>
+  </div>
+
+  <!-- remotes tab -->
+  <div class="tab-panel" x-show="loaded && tab === 'remotes' && state.isGitRepo">
+    <section class="section">
+      <div class="section-head">
+        <div>
+          <h2>Remotes</h2>
+          <p class="hint">Configured remotes. Fetch from remote updates local tracking refs without changing your working tree.</p>
+        </div>
+        <button class="btn outline" x-show="state.origin" :disabled="busy" @click="remoteSync">Remote sync (origin)</button>
+      </div>
+      <div class="cards">
+        <template x-for="remote in remotes" :key="remote.name">
+          <div class="card tag-card">
+            <div>
+              <span class="tag-name" x-text="remote.name"></span>
+              <div class="tag-meta">
+                <span x-text="remote.url"></span>
+              </div>
+            </div>
+            <div class="tag-actions">
+              <button class="btn sm outline" :disabled="busy"
+                      @click="fetchRemote(remote.name)"
+                      x-text="'Fetch from ' + remote.name"></button>
+            </div>
+          </div>
+        </template>
+      </div>
+      <template x-if="remotesLoaded && !remotes.length">
+        <div class="empty">No remotes configured.</div>
+      </template>
+    </section>
+  </div>
 
   <!-- rename dialog -->
   <template x-if="renaming">
     <div class="overlay" @click.self="renaming = null">
       <div class="dialog">
-        <h3>Rename tag</h3>
-        <p x-text="'Re-tags the commit of ' + renaming.name + ' and deletes the old tag' + (remote ? ', on origin too.' : '.')"></p>
+        <h3>Rename tag locally</h3>
+        <p x-text="'Re-tags the commit of ' + renaming.name + ' locally and deletes the old local tag.'"></p>
+        <label class="check" x-show="state.origin">
+          <input type="checkbox" x-model="renameRemote"> also update on remote
+        </label>
         <input class="input" x-model="renameTo" @keydown.enter="submitRename">
         <div class="dialog-actions">
           <button class="btn outline" @click="renaming = null">Cancel</button>
-          <button class="btn" :disabled="busy" @click="submitRename">Rename</button>
+          <button class="btn" :disabled="busy" @click="submitRename">Rename locally</button>
         </div>
       </div>
     </div>

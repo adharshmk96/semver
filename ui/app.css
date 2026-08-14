@@ -88,6 +88,59 @@ header .origin:hover { color: var(--foreground); }
   font-weight: 600;
 }
 
+/* tabs */
+
+.tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin-top: 1.5rem;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  background: transparent;
+  color: var(--muted-foreground);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.tab:hover { color: var(--foreground); }
+.tab.active {
+  color: var(--foreground);
+  border-bottom-color: var(--primary);
+}
+
+.tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1rem;
+  height: 1rem;
+  padding: 0 0.25rem;
+  border-radius: 9999px;
+  background: #fcd34d;
+  color: #78350f;
+  font-size: 0.625rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+@media (prefers-color-scheme: dark) {
+  .tab-badge { background: #78350f; color: #fcd34d; }
+}
+
+.tab-panel .section:first-child { margin-top: 1.25rem; }
+
 /* card */
 
 .card {
@@ -99,12 +152,12 @@ header .origin:hover { color: var(--foreground); }
 
 .cards { display: grid; gap: 0.75rem; }
 
+/* info on top, actions pinned to the bottom edge whatever the card height */
 .tag-card {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.75rem;
   transition: border-color 0.15s;
 }
 
@@ -125,7 +178,12 @@ header .origin:hover { color: var(--foreground); }
   flex-wrap: wrap;
 }
 
-.tag-actions { display: flex; gap: 0.5rem; }
+.tag-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: auto;
+}
 
 /* badge */
 
